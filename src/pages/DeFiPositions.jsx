@@ -188,6 +188,24 @@ export default function DeFiPositions() {
                     Alavancagem: <span className="font-bold text-pink-400">{pos.leverage}x</span>
                   </div>
                 )}
+                {pos.type === 'uniswap-pool' && (
+                  <div className="mt-auto space-y-2">
+                    <div className="flex justify-between text-xs text-gray-400 bg-cyan-500/5 px-3 py-2 rounded border border-cyan-500/10">
+                      <span>Par: {pos.tokenSymbol}/{pos.quoteTokenSymbol || 'USDC'}</span>
+                      <span className="font-bold text-cyan-400">Entrada: ${Number(pos.entryPrice || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400 bg-cyan-500/5 px-3 py-2 rounded border border-cyan-500/10">
+                      <span>Range: ${Number(pos.priceLow || 0).toFixed(2)} - ${Number(pos.priceHigh || 0).toFixed(2)}</span>
+                      <span className="font-bold text-cyan-400">BE APR: {Number(pos.breakEvenAPR || 0).toFixed(1)}%</span>
+                    </div>
+                    {pos.days && (
+                      <div className="flex justify-between text-xs text-gray-400 bg-cyan-500/5 px-3 py-2 rounded border border-cyan-500/10">
+                        <span>Período: {pos.days} dias</span>
+                        <span className="font-bold text-cyan-400">IV: {Number(pos.impliedVolatility || 0).toFixed(0)}%</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )
           })}

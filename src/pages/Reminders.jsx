@@ -1,12 +1,31 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { Bell, Trash2, List, Calendar as CalendarIcon, Clock, Edit2, X } from 'lucide-react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { Bell, Trash2, List, Calendar as CalendarIcon, Clock, Edit2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { storage } from '../lib/utils';
+import { db } from '../lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 const RemindersPage = () => {
   const [reminders, setReminders] = useState(() => storage.getArray('mercurius_reminders'));
   const [editingTracker, setEditingTracker] = useState(null);
   const [editForm, setEditForm] = useState({ capital: 0, costs: 0, points: 0, txs: 0, streak: 0 });
   const [viewTab, setViewTab] = useState('list');
+
+  // Calendar state
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [globalEvents, setGlobalEvents] = useState([]);
+
+  // Fetch global events from Firestore
+  useEffect(() => {
+    const eventsRef = doc(db, 'settings', 'calendar_events');
+    const unsub = onSnapshot(eventsRef, (snap) => {
+      if (snap.exists()) {
+        setGlobalEvents(snap.data().events || []);
+      }
+    }, () => {
+      // Silently ignore if doc doesn't exist yet
+    });
+    return () => unsub();
+  }, []);
 
   const persist = useCallback((updated) => {
     setReminders(updated);
@@ -48,20 +67,33 @@ const RemindersPage = () => {
     [reminders, editingTracker, editForm, persist]
   );
 
-  const groupedReminders = useMemo(() => {
-    const sorted = [...reminders].sort((a, b) => new Date(a.date) - new Date(b.date));
-    return sorted.reduce((groups, rem) => {
-      const d = new Date(rem.date).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-      (groups[d] = groups[d] || []).push(rem);
-      return groups;
-    }, {});
-  }, [reminders]);
+  // Calendar utilities
+  const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+
+  const getEventsForDay = useCallback((day) => {
+    const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    // Personal tracker reminders
+    const personalEvents = reminders
+      .filter(r => r.date && r.date.startsWith(dateStr))
+      .map(r => ({ ...r, isGlobal: false, eventColor: r.type?.toLowerCase() === 'testnet' ? 'blue' : 'green' }));
+
+    // Global events from Firestore
+    const globalEvts = globalEvents
+      .filter(e => e.date === dateStr)
+      .map(e => ({ ...e, isGlobal: true, eventColor: e.type === 'tge' ? 'yellow' : e.type === 'launch' ? 'green' : 'red' }));
+
+    return [...personalEvents, ...globalEvts];
+  }, [currentMonth, reminders, globalEvents]);
 
   return (
     <div className="animate-in fade-in pb-24 md:pb-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Trackers de Farming</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Trackers e Agenda</h1>
           <p className="text-gray-400">Acompanhe capital, custos e sua agenda de interações.</p>
         </div>
         <div className="bg-[#111] p-1 rounded-lg border border-gray-800 flex items-center w-full md:w-auto">
@@ -79,7 +111,7 @@ const RemindersPage = () => {
         </div>
       </div>
 
-      {reminders.length === 0 ? (
+      {reminders.length === 0 && viewTab === 'list' ? (
         <div className="text-center py-16 border-2 border-dashed border-gray-800 rounded-2xl bg-[#111]">
           <Bell className="w-12 h-12 text-gray-600 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-white mb-1">Nenhum Tracker Ativo</h3>
@@ -153,29 +185,96 @@ const RemindersPage = () => {
           })}
         </div>
       ) : (
-        <div className="relative border-l border-gray-800 ml-3 md:ml-6 space-y-8 py-4">
-          {Object.entries(groupedReminders).map(([dateLabel, items]) => (
-            <div key={dateLabel} className="relative pl-8 md:pl-12">
-              <div className="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-              <h3 className="text-base font-bold text-white capitalize mb-4">{dateLabel}</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {items.map((item) => (
-                  <div key={item.id} className="bg-[#111] border border-gray-800 rounded-xl p-4 flex justify-between items-center hover:border-gray-700 transition-colors">
-                    <div>
-                      <h4 className="text-sm font-bold text-white">{item.title}</h4>
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mt-1">{item.type}</p>
-                    </div>
-                    <div className="p-2 bg-blue-500/10 rounded-full text-blue-500">
-                      <Clock className="w-4 h-4" />
-                    </div>
+        /* ========== GOOGLE CALENDAR-STYLE MONTHLY VIEW ========== */
+        <div className="bg-[#111] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+          {/* Calendar Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-[#0D0F13]">
+            <button onClick={prevMonth} className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-gray-400 hover:text-white outline-none">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <h3 className="text-lg font-bold text-white capitalize">
+              {currentMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+            </h3>
+            <button onClick={nextMonth} className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-gray-400 hover:text-white outline-none">
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Day of week headers */}
+          <div className="grid grid-cols-7 border-b border-gray-800">
+            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
+              <div key={d} className="p-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">{d}</div>
+            ))}
+          </div>
+
+          {/* Calendar grid */}
+          <div className="grid grid-cols-7">
+            {/* Empty cells for days before first day */}
+            {Array.from({ length: getFirstDayOfMonth(currentMonth) }, (_, i) => (
+              <div key={`empty-${i}`} className="min-h-[90px] md:min-h-[100px] border-b border-r border-gray-800/50 bg-[#0a0a0a]/50" />
+            ))}
+
+            {/* Day cells */}
+            {Array.from({ length: getDaysInMonth(currentMonth) }, (_, i) => {
+              const day = i + 1;
+              const events = getEventsForDay(day);
+              const isToday = new Date().toDateString() === new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day).toDateString();
+
+              return (
+                <div key={day} className={`min-h-[90px] md:min-h-[100px] border-b border-r border-gray-800/50 p-1.5 md:p-2 ${isToday ? 'bg-blue-500/5' : ''}`}>
+                  <span className={`text-xs font-bold inline-flex items-center justify-center ${isToday ? 'bg-blue-500 text-white w-6 h-6 rounded-full' : 'text-gray-400 w-6 h-6'}`}>
+                    {day}
+                  </span>
+                  <div className="mt-1 space-y-0.5">
+                    {events.slice(0, 3).map((evt, ei) => {
+                      const colorMap = {
+                        blue: 'bg-blue-500/20 text-blue-400',
+                        green: 'bg-green-500/20 text-green-400',
+                        yellow: 'bg-yellow-500/20 text-yellow-400',
+                        red: 'bg-red-500/20 text-red-400',
+                      };
+                      return (
+                        <div
+                          key={ei}
+                          className={`text-[9px] md:text-[10px] font-medium px-1 md:px-1.5 py-0.5 rounded truncate ${colorMap[evt.eventColor] || colorMap.blue}`}
+                          title={`${evt.title}${evt.isGlobal ? ' (Global)' : ''}`}
+                        >
+                          {evt.isGlobal && <span className="opacity-60 mr-0.5">&#9733;</span>}
+                          {evt.title}
+                        </div>
+                      );
+                    })}
+                    {events.length > 3 && (
+                      <span className="text-[9px] text-gray-500 pl-1">+{events.length - 3} mais</span>
+                    )}
                   </div>
-                ))}
-              </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-4 md:gap-6 px-6 py-3 border-t border-gray-800 bg-[#0D0F13]">
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <span className="w-3 h-3 rounded-sm bg-blue-500/30" /> Testnet
             </div>
-          ))}
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <span className="w-3 h-3 rounded-sm bg-green-500/30" /> Mainnet
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <span className="w-3 h-3 rounded-sm bg-yellow-500/30" /> TGE
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <span className="w-3 h-3 rounded-sm bg-red-500/30" /> Deadline
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <span className="opacity-60">&#9733;</span> Evento Global
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Edit Tracker Modal */}
       {editingTracker && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" role="dialog" aria-modal="true">
           <div className="bg-[#151515] border border-gray-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
@@ -188,7 +287,7 @@ const RemindersPage = () => {
             <form onSubmit={saveTrackerUpdate} className="p-6 space-y-4">
               {editingTracker.type?.toLowerCase() === 'testnet' ? (
                 <>
-                  {[{ key: 'txs', label: 'Txs Realizadas', type: 'number' }, { key: 'streak', label: 'Streak (Dias)', type: 'number' }].map(({ key, label }) => (
+                  {[{ key: 'txs', label: 'Txs Realizadas' }, { key: 'streak', label: 'Streak (Dias)' }].map(({ key, label }) => (
                     <div key={key}>
                       <label className="block text-sm font-medium text-gray-400 mb-1">{label}</label>
                       <input

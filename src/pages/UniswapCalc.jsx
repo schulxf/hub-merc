@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Info, TrendingUp, TrendingDown, Calculator, RefreshCw, AlertCircle, Save, Trash2, History, BarChart3, Loader2 } from 'lucide-react';
+import { Info, TrendingUp, TrendingDown, Calculator, RefreshCw, AlertCircle, Save, Trash2, History, BarChart3, Loader2, CheckCircle2 } from 'lucide-react';
+import { db, auth } from '../lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import { XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceLine, Area, AreaChart } from 'recharts';
 import TokenSelector from '../components/defi/TokenSelector';
 import PositionStatus from '../components/defi/PositionStatus';
@@ -127,11 +129,8 @@ export default function UniswapCalc() {
   const [priceHigh, setPriceHigh] = useState(0);
   const [manualRangeEdit, setManualRangeEdit] = useState(false);
   const [expectedAPR, setExpectedAPR] = useState(60);
-  const [savedPositions, setSavedPositions] = useState([]);
-  const [editingFees, setEditingFees] = useState(null);
-  const [feeInput, setFeeInput] = useState('');
-  const [editingFeeEntry, setEditingFeeEntry] = useState(null);
-  const [editingFeeValue, setEditingFeeValue] = useState('');
+  const [isSavingPosition, setIsSavingPosition] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Tab State
   const [activeTab, setActiveTab] = useState('v1');
@@ -244,16 +243,6 @@ export default function UniswapCalc() {
     if (layer2Tokens.includes(tokenId)) return 75;
     return token.defaultIV || 80;
   };
-
-  // Load saved positions
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('uniswap_positions');
-      if (saved) setSavedPositions(JSON.parse(saved));
-    } catch (error) {
-      console.error('Error loading positions:', error);
-    }
-  }, []);
 
   // Fetch price
   const fetchPrice = useCallback(async (tokenId) => {
@@ -424,7 +413,7 @@ export default function UniswapCalc() {
 
   const resetAutoRange = () => setManualRangeEdit(false);
 
-  const savePosition = () => {
+  const savePosition = async () => {
     if (!selectedToken || !spotPrice || !calculations) return;
     const newPosition = {
       id: Date.now(), timestamp: new Date().toISOString(), mode: activeTab,
@@ -437,98 +426,30 @@ export default function UniswapCalc() {
       impliedVolatility: activeTab === 'v2' ? pairVolatility : impliedVolatility,
       days, expectedAPR, breakEvenAPR: calculations.breakEvenAPR, feesCollected: []
     };
-    const updated = [newPosition, ...savedPositions];
-    setSavedPositions(updated);
+
+    setIsSavingPosition(true);
     try {
-      localStorage.setItem('uniswap_positions', JSON.stringify(updated));
+      const posId = Date.now().toString();
+      const posRef = doc(db, 'users', auth.currentUser.uid, 'defi', posId);
+
+      await setDoc(posRef, {
+        type: 'uniswap-pool',
+        protocol: 'Uniswap V3',
+        asset: `${newPosition.tokenSymbol}/${newPosition.quoteTokenSymbol}`,
+        capital: newPosition.principal,
+        apr: newPosition.expectedAPR,
+        ...newPosition,
+        updatedAt: new Date().toISOString(),
+      });
+
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
-      console.error('Error saving position:', error);
+      console.error('Erro ao salvar posição:', error);
+      alert('Erro ao salvar posição. Verifique se está autenticado.');
+    } finally {
+      setIsSavingPosition(false);
     }
-  };
-
-  const addFeesToPosition = (positionId) => {
-    if (!feeInput || isNaN(feeInput) || Number(feeInput) <= 0) return;
-    const updated = savedPositions.map(pos => {
-      if (pos.id === positionId) {
-        const feesCollected = pos.feesCollected || [];
-        return { ...pos, feesCollected: [...feesCollected, { amount: Number(feeInput), timestamp: new Date().toISOString() }] };
-      }
-      return pos;
-    });
-    setSavedPositions(updated);
-    localStorage.setItem('uniswap_positions', JSON.stringify(updated));
-    setEditingFees(null);
-    setFeeInput('');
-  };
-
-  const calculateRealizedAPR = (position) => {
-    const totalFees = (position.feesCollected || []).reduce((sum, fee) => sum + fee.amount, 0);
-    const daysElapsed = Math.max(1, Math.floor((Date.now() - new Date(position.timestamp).getTime()) / (1000 * 60 * 60 * 24)));
-    return (totalFees / position.principal) * (365 / daysElapsed) * 100;
-  };
-
-  const calculateCurrentIL = useCallback(async (position) => {
-    try {
-      const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${position.tokenId}&vs_currencies=usd`);
-      const data = await response.json();
-      const currentPrice = data[position.tokenId]?.usd || position.entryPrice;
-      const P = currentPrice;
-      const Pa = position.priceLow;
-      const Pb = position.priceHigh;
-      const sqrtPa = Math.sqrt(Pa);
-      const sqrtPb = Math.sqrt(Pb);
-      const calculateLPValue = (price) => {
-        const sp = Math.sqrt(price);
-        if (price <= Pa) return 0;
-        if (price >= Pb) return 0;
-        const L = 1;
-        return L * (1/sp - 1/sqrtPb) * price + L * (sp - sqrtPa);
-      };
-      const initialVolatile = position.principal / 2 / position.entryPrice;
-      const initialStable = position.principal / 2;
-      const hodlValue = initialVolatile * currentPrice + initialStable;
-      const entryLPValue = calculateLPValue(position.entryPrice);
-      const lpValue = entryLPValue > 0 ? calculateLPValue(currentPrice) * (position.principal / entryLPValue) : position.principal;
-      const ilPercent = ((lpValue - hodlValue) / hodlValue) * 100;
-      const ilDollar = hodlValue - lpValue;
-      return { ilPercent, ilDollar: Math.max(0, ilDollar), currentPrice };
-    } catch (error) {
-      return { ilPercent: 0, ilDollar: 0, currentPrice: position.entryPrice };
-    }
-  }, []);
-
-  const deletePosition = (id) => {
-    const updated = savedPositions.filter(p => p.id !== id);
-    setSavedPositions(updated);
-    localStorage.setItem('uniswap_positions', JSON.stringify(updated));
-  };
-
-  const editFeeEntry = (positionId, feeIndex, newValue) => {
-    const updated = savedPositions.map(pos => {
-      if (pos.id === positionId) {
-        const feesCollected = [...(pos.feesCollected || [])];
-        feesCollected[feeIndex] = { ...feesCollected[feeIndex], amount: Number(newValue) };
-        return { ...pos, feesCollected };
-      }
-      return pos;
-    });
-    setSavedPositions(updated);
-    localStorage.setItem('uniswap_positions', JSON.stringify(updated));
-    setEditingFeeEntry(null);
-    setEditingFeeValue('');
-  };
-
-  const deleteFeeEntry = (positionId, feeIndex) => {
-    const updated = savedPositions.map(pos => {
-      if (pos.id === positionId) {
-        const feesCollected = [...(pos.feesCollected || [])];
-        feesCollected.splice(feeIndex, 1);
-        return { ...pos, feesCollected };
-      }
-      return pos;
-    });
-    setSavedPositions(updated);
-    localStorage.setItem('uniswap_positions', JSON.stringify(updated));
   };
 
   // Loading state
@@ -564,22 +485,6 @@ export default function UniswapCalc() {
             <Info size={16} />
             <span className="hidden lg:inline">Guia Oficial</span>
           </a>
-          <button
-            onClick={() => setActiveTab('portfolio')}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all font-medium text-sm ${
-              activeTab === 'portfolio'
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50'
-                : 'bg-[#111] text-gray-400 border border-gray-700 hover:border-gray-600'
-            }`}
-          >
-            <History size={18} />
-            <span className="hidden md:inline">Histórico</span>
-            {savedPositions.length > 0 && (
-              <span className="bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                {savedPositions.length}
-              </span>
-            )}
-          </button>
         </div>
       </div>
 
@@ -600,21 +505,10 @@ export default function UniswapCalc() {
             <span className="hidden sm:inline">Par Volátil</span>
             <span className="sm:hidden">Volátil</span>
           </button>
-          <button onClick={() => setActiveTab('portfolio')}
-            className={`flex-1 min-w-[140px] px-6 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'portfolio' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30' : 'text-gray-400 hover:text-white hover:bg-[#181818]'
-            }`}>
-            <span>Portfólio</span>
-            {savedPositions.length > 0 && (
-              <span className="bg-white/20 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                {savedPositions.length}
-              </span>
-            )}
-          </button>
         </div>
 
         {/* Tab Info Banner */}
-        {activeTab !== 'portfolio' && (
+        {(activeTab === 'v1' || activeTab === 'v2') && (
           <div className={`mt-4 rounded-2xl p-5 border ${
             activeTab === 'v1' ? 'bg-blue-500/5 border-blue-500/30' : 'bg-purple-500/5 border-purple-500/30'
           }`}>
@@ -639,110 +533,7 @@ export default function UniswapCalc() {
         )}
       </div>
 
-      {/* Portfolio Tab */}
-      {activeTab === 'portfolio' && (
-        <div className="mb-8 bg-[#111] border border-gray-800 rounded-2xl p-6 shadow-xl">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-3">
-              <History size={24} className="text-blue-400" />
-              Gerenciador de Posições
-            </h2>
-            <span className="text-sm text-gray-500 bg-[#0D0F13] px-3 py-1 rounded-full border border-gray-700">
-              {savedPositions.length} {savedPositions.length === 1 ? 'posição' : 'posições'}
-            </span>
-          </div>
-
-          {savedPositions.length === 0 ? (
-            <div className="text-center py-16 text-gray-500">
-              <div className="w-20 h-20 rounded-2xl bg-[#0D0F13] flex items-center justify-center mx-auto mb-4">
-                <History size={40} className="opacity-30" />
-              </div>
-              <p className="text-base font-medium">Nenhuma posição salva ainda</p>
-              <p className="text-sm mt-2 text-gray-600">Configure uma simulação e clique em "Salvar Posição"</p>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {savedPositions.map((pos) => {
-                const totalFees = (pos.feesCollected || []).reduce((sum, fee) => sum + fee.amount, 0);
-                const realizedAPR = calculateRealizedAPR(pos);
-                const daysElapsed = Math.floor((Date.now() - new Date(pos.timestamp).getTime()) / (1000 * 60 * 60 * 24));
-                return (
-                  <div key={pos.id} className="bg-[#0D0F13] border border-gray-700 rounded-2xl p-5 hover:border-gray-600 transition-colors">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-bold text-white">{pos.tokenSymbol}/{pos.quoteTokenSymbol || 'USDC'}</h3>
-                          <span className="text-xs text-gray-500 bg-[#111] px-2 py-1 rounded-md">
-                            {daysElapsed} {daysElapsed === 1 ? 'dia' : 'dias'} ativo
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-400">
-                          Entrada: ${pos.entryPrice.toFixed(2)} | Range: ${pos.priceLow.toFixed(2)} - ${pos.priceHigh.toFixed(2)}
-                        </p>
-                      </div>
-                      <button onClick={() => deletePosition(pos.id)} className="text-red-400 hover:text-red-300 transition-colors p-2" title="Remover posição">
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                      <div className="bg-[#111] rounded-xl p-3"><p className="text-xs text-gray-500 mb-1">Capital</p><p className="text-lg font-bold text-white">${pos.principal.toLocaleString()}</p></div>
-                      <div className="bg-[#111] rounded-xl p-3"><p className="text-xs text-gray-500 mb-1">Taxas Coletadas</p><p className="text-lg font-bold text-emerald-400">${totalFees.toFixed(2)}</p></div>
-                      <div className="bg-[#111] rounded-xl p-3"><p className="text-xs text-gray-500 mb-1">APR Real</p><p className="text-lg font-bold text-blue-400">{realizedAPR.toFixed(1)}%</p></div>
-                      <div className="bg-[#111] rounded-xl p-3"><p className="text-xs text-gray-500 mb-1">Break-even</p><p className={`text-lg font-bold ${realizedAPR >= pos.breakEvenAPR ? 'text-emerald-400' : 'text-amber-400'}`}>{pos.breakEvenAPR.toFixed(1)}%</p></div>
-                    </div>
-                    <PositionStatus position={pos} totalFees={totalFees} calculateCurrentIL={calculateCurrentIL} />
-                    {/* Fee History */}
-                    {(pos.feesCollected || []).length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-gray-700">
-                        <h4 className="text-sm font-semibold text-gray-300 mb-3">Histórico de Coletas</h4>
-                        <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
-                          {(pos.feesCollected || []).map((fee, feeIndex) => {
-                            const isEditing = editingFeeEntry === `${pos.id}-${feeIndex}`;
-                            return (
-                              <div key={feeIndex} className="flex items-center justify-between bg-[#111] rounded-lg px-3 py-2 text-sm">
-                                <span className="text-gray-500">{new Date(fee.timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
-                                {isEditing ? (
-                                  <div className="flex items-center gap-2">
-                                    <input type="number" value={editingFeeValue} onChange={(e) => setEditingFeeValue(e.target.value)} className="w-20 bg-[#0D0F13] border border-gray-700 rounded px-2 py-1 text-white text-sm focus:outline-none focus:border-blue-500" autoFocus />
-                                    <button onClick={() => editFeeEntry(pos.id, feeIndex, editingFeeValue)} className="text-emerald-400 hover:text-emerald-300 text-xs">Salvar</button>
-                                    <button onClick={() => { setEditingFeeEntry(null); setEditingFeeValue(''); }} className="text-gray-400 hover:text-gray-300 text-xs">Cancelar</button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-white font-semibold">${fee.amount.toFixed(2)}</span>
-                                    <button onClick={() => { setEditingFeeEntry(`${pos.id}-${feeIndex}`); setEditingFeeValue(fee.amount.toString()); }} className="text-blue-400 hover:text-blue-300 text-xs">Editar</button>
-                                    <button onClick={() => deleteFeeEntry(pos.id, feeIndex)} className="text-red-400 hover:text-red-300"><Trash2 size={14} /></button>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    <div className="mt-4 pt-4 border-t border-gray-700">
-                      {editingFees === pos.id ? (
-                        <div className="flex gap-2">
-                          <input type="number" value={feeInput} onChange={(e) => setFeeInput(e.target.value)} placeholder="Ex: 50.00" className="flex-1 bg-[#0D0F13] border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500" autoFocus />
-                          <button onClick={() => addFeesToPosition(pos.id)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors">Salvar</button>
-                          <button onClick={() => { setEditingFees(null); setFeeInput(''); }} className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors">Cancelar</button>
-                        </div>
-                      ) : (
-                        <button onClick={() => setEditingFees(pos.id)} className="w-full px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium transition-all flex items-center justify-center gap-2">
-                          Registrar Nova Coleta
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Calculator Tabs (V1 & V2) */}
-      {activeTab !== 'portfolio' && (
       <>
         {/* V2 Maintenance Mode */}
         {activeTab === 'v2' && (
@@ -979,8 +770,9 @@ export default function UniswapCalc() {
 
                 {/* Save Position */}
                 <div className="flex justify-center">
-                  <button onClick={savePosition} disabled={!calculations} className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white rounded-2xl font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 text-base">
-                    <Save size={20} /> Salvar Posição no Histórico
+                  <button onClick={savePosition} disabled={!calculations || isSavingPosition} className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white rounded-2xl font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 text-base">
+                    {isSavingPosition ? <Loader2 size={20} className="animate-spin" /> : saveSuccess ? <CheckCircle2 size={20} className="text-emerald-400" /> : <Save size={20} />}
+                    {saveSuccess ? 'Posição Salva!' : 'Salvar Posição'}
                   </button>
                 </div>
 
@@ -1010,7 +802,6 @@ export default function UniswapCalc() {
         </div>
         )}
       </>
-      )}
     </div>
   );
 }

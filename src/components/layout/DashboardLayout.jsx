@@ -17,7 +17,6 @@ import DeFiToolsLanding from '../../pages/DeFiToolsLanding';
 
 // Lazy imports para páginas pesadas (reduz bundle inicial)
 const AdminPanel = lazy(() => import('../../pages/AdminPanel'));
-const UniswapCalc = lazy(() => import('../../pages/UniswapCalc'));
 
 // Fallback de loading para Suspense
 const PageLoader = () => (
@@ -98,7 +97,6 @@ const DashboardLayout = () => {
       'airdrop-detail': 'airdrops',
       'defi-positions': 'defi',
       'defi-tools': 'defi',
-      'uniswap-calc': 'defi',
       'reminders': 'reminders',
       'carteiras-recomendadas': 'portfolio'
     };
@@ -205,10 +203,9 @@ const DashboardLayout = () => {
               {currentRoute === 'reminders' && <RemindersPage />}
               {currentRoute === 'portfolio' && <Portfolio />}
               {currentRoute === 'carteiras-pro' && <Wallets />}
-              {currentRoute === 'defi-tools' && <DeFiToolsLanding navigateTo={navigateTo} />}
-              {currentRoute === 'uniswap-calc' && <UniswapCalc />}
+              {currentRoute === 'defi-tools' && <DeFiToolsLanding />}
 
-              {['analises', 'cursos', 'suporte', 'carteiras-recomendadas'].includes(currentRoute) && (
+              {['analises', 'cursos', 'suporte', 'carteiras-recomendadas', 'research'].includes(currentRoute) && (
                 <MockPage title={getRouteTitle(currentRoute)} />
               )}
             </>

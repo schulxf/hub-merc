@@ -20,6 +20,53 @@ const MORALIS_SOL = 'https://solana-gateway.moralis.io';
  */
 
 /**
+ * Detecta tokens scam/spam com heurísticas simples.
+ * Moralis retorna `possible_spam` para ERC-20; combinamos com regras extras.
+ */
+function isSpamToken(token) {
+  const name = (token.name || '').trim();
+  const symbol = (token.symbol || '').trim();
+
+  // Campo nativo do Moralis
+  if (token.possible_spam === true) return true;
+
+  // Symbol vazio ou absurdamente longo
+  if (!symbol || symbol === 'UNKNOWN' || symbol.length > 20) return true;
+
+  // Nome excessivamente longo
+  if (name.length > 60) return true;
+
+  // Caracteres estranhos no symbol (permitir apenas alfanuméricos, ponto e hífen)
+  if (/[^a-zA-Z0-9.\-]/.test(symbol)) return true;
+
+  // Nomes que parecem URLs (padrão de scam comum)
+  if (/https?:\/\/|\.com|\.xyz|\.io|\.net|\.org/.test(name.toLowerCase())) return true;
+
+  return false;
+}
+
+/**
+ * Tenta descobrir o CoinGecko ID a partir do symbol de um token.
+ * Usa a API de busca do CoinGecko. Retorna null se não encontrar.
+ */
+export async function lookupCoinGeckoId(symbol) {
+  try {
+    const res = await fetch(
+      `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(symbol)}`
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    // Tenta match exato pelo symbol (case-insensitive)
+    const match = data.coins?.find(
+      c => c.symbol?.toLowerCase() === symbol.toLowerCase()
+    );
+    return match ? { id: match.id, name: match.name, symbol: match.symbol } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Busca saldos ERC-20 + ETH nativo de um endereço EVM via Moralis.
  */
 async function fetchEvmBalances(address, chain = 'eth') {
@@ -54,19 +101,21 @@ async function fetchEvmBalances(address, chain = 'eth') {
     });
   }
 
-  // ERC-20 tokens
+  // ERC-20 tokens (com filtragem de scam)
   for (const t of (Array.isArray(tokensData) ? tokensData : [])) {
+    if (isSpamToken(t)) continue;
+
     const decimals = Number(t.decimals) || 18;
     const amount = parseFloat(t.balance) / Math.pow(10, decimals);
-    if (amount > 0) {
-      tokens.push({
-        symbol: t.symbol || 'UNKNOWN',
-        name: t.name || t.symbol || 'Unknown Token',
-        amount,
-        decimals,
-        contractAddress: t.token_address,
-      });
-    }
+    if (amount < 0.001) continue; // dust threshold aumentado
+
+    tokens.push({
+      symbol: t.symbol || 'UNKNOWN',
+      name: t.name || t.symbol || 'Unknown Token',
+      amount,
+      decimals,
+      contractAddress: t.token_address,
+    });
   }
 
   return tokens;
@@ -101,15 +150,17 @@ async function fetchSolBalances(address) {
     if (res.ok) {
       const data = await res.json();
       for (const t of (Array.isArray(data) ? data : [])) {
+        if (isSpamToken(t)) continue;
+
         const decimals = Number(t.decimals) || 9;
         const amount = parseFloat(t.amount) / Math.pow(10, decimals);
-        if (amount > 0) {
-          tokens.push({
-            symbol: t.symbol || 'UNKNOWN',
-            name: t.name || t.symbol || 'Unknown SPL Token',
-            amount,
-          });
-        }
+        if (amount < 0.001) continue;
+
+        tokens.push({
+          symbol: t.symbol || 'UNKNOWN',
+          name: t.name || t.symbol || 'Unknown SPL Token',
+          amount,
+        });
       }
     }
   } catch (e) {

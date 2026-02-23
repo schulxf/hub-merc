@@ -1,9 +1,9 @@
 import React from 'react';
 import {
   ChevronDown, ChevronUp, Briefcase, PieChart,
-  Wallet, Activity, Zap, LayoutGrid,
+  Activity, Zap, LayoutGrid,
   ArrowRightLeft, Bell, Layers, GraduationCap, LifeBuoy, LogOut, Lock, Shield,
-  Star, Calculator
+  Star, BookOpen
 } from 'lucide-react';
 
 export const MENU_CATEGORIES = [
@@ -13,9 +13,8 @@ export const MENU_CATEGORIES = [
     icon: Briefcase,
     items: [
       { id: 'portfolio', label: 'Portfólio', icon: PieChart, permKey: 'portfolio' },
-      { id: 'carteiras-pro', label: 'Perfil & Carteiras', icon: Wallet, isMock: false, permKey: 'portfolio' },
       { id: 'analises', label: 'Análises', icon: Activity, isMock: true, permKey: 'portfolio' },
-      { id: 'carteiras-recomendadas', label: 'Carteiras Recomendadas', icon: Star, isMock: true, permKey: 'portfolio' },
+      { id: 'carteiras-recomendadas', label: 'Carteiras', icon: Star, isMock: true, permKey: 'portfolio' },
     ]
   },
   {
@@ -25,10 +24,16 @@ export const MENU_CATEGORIES = [
     items: [
       { id: 'airdrops', label: 'Hub de Airdrops', icon: LayoutGrid, permKey: 'airdrops' },
       { id: 'defi-tools', label: 'Ferramentas DeFi', icon: ArrowRightLeft, permKey: 'defi' },
-      { id: 'uniswap-calc', label: 'Calculadora de Pools', icon: Calculator, permKey: 'defi' },
-      { id: 'reminders', label: 'Trackers & Agenda', icon: Bell, permKey: 'reminders' },
-      { id: 'defi-positions', label: 'Posições DeFi', icon: Layers, isMock: false, permKey: 'defi' },
+      { id: 'defi-positions', label: 'Posições DeFi', icon: Layers, permKey: 'defi' },
+      { id: 'reminders', label: 'Trackers e Agenda', icon: Bell, permKey: 'reminders' },
     ]
+  },
+  {
+    id: 'research',
+    label: 'Research',
+    icon: BookOpen,
+    isMock: true,
+    permKey: 'free'
   },
   {
     id: 'cursos',

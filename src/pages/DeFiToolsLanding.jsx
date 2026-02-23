@@ -1,5 +1,7 @@
-import React from 'react';
-import { Calculator, ArrowRightLeft, BarChart3, Layers } from 'lucide-react';
+import React, { useState, Suspense, lazy } from 'react';
+import { Calculator, ArrowRightLeft, BarChart3, Layers, ChevronLeft, Loader2 } from 'lucide-react';
+
+const UniswapCalc = lazy(() => import('./UniswapCalc'));
 
 const DEFI_TOOLS = [
   {
@@ -10,7 +12,6 @@ const DEFI_TOOLS = [
     color: 'blue',
     tags: ['Simulador', 'IL', 'APR'],
   },
-  // Ferramentas futuras podem ser adicionadas aqui
 ];
 
 const COMING_SOON = [
@@ -31,7 +32,33 @@ const COMING_SOON = [
   },
 ];
 
-export default function DeFiToolsLanding({ navigateTo }) {
+const ToolLoader = () => (
+  <div className="flex items-center justify-center py-20">
+    <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+  </div>
+);
+
+export default function DeFiToolsLanding() {
+  const [activeTool, setActiveTool] = useState(null);
+
+  // Renderiza ferramenta inline
+  if (activeTool === 'uniswap-calc') {
+    return (
+      <div className="animate-in fade-in pb-12">
+        <button
+          onClick={() => setActiveTool(null)}
+          className="flex items-center gap-2 text-gray-400 hover:text-white mb-6 text-sm font-medium transition-colors outline-none"
+        >
+          <ChevronLeft className="w-4 h-4" /> Voltar para Ferramentas
+        </button>
+        <Suspense fallback={<ToolLoader />}>
+          <UniswapCalc />
+        </Suspense>
+      </div>
+    );
+  }
+
+  // Landing page com cards de ferramentas
   return (
     <div className="animate-in fade-in pb-12">
       <div className="mb-8">
@@ -47,11 +74,11 @@ export default function DeFiToolsLanding({ navigateTo }) {
         {DEFI_TOOLS.map((tool) => (
           <button
             key={tool.id}
-            onClick={() => navigateTo(tool.id)}
+            onClick={() => setActiveTool(tool.id)}
             className="bg-[#111] border border-gray-800 rounded-2xl p-6 text-left hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all group"
           >
-            <div className={`w-12 h-12 rounded-xl bg-${tool.color}-500/10 border border-${tool.color}-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-              <tool.icon className={`w-6 h-6 text-${tool.color}-400`} />
+            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <tool.icon className="w-6 h-6 text-blue-400" />
             </div>
             <h3 className="text-lg font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">{tool.title}</h3>
             <p className="text-sm text-gray-500 mb-4 leading-relaxed">{tool.description}</p>
