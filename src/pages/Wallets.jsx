@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Wallet, Plus, Trash2, Loader2, Globe2, AlertCircle, User2, Crown } from 'lucide-react';
 import { db, auth } from '../lib/firebase';
-import { collection, doc, setDoc, deleteDoc, onSnapshot, query } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { useUserProfile } from '../hooks/useUserProfile';
+import { useWallets } from '../hooks/useWallets';
 
 export default function Wallets() {
-  const [wallets, setWallets] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { wallets, isLoading } = useWallets();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({
@@ -22,34 +22,6 @@ export default function Wallets() {
   const [isRemoving, setIsRemoving] = useState(false);
 
   const { profile } = useUserProfile();
-
-  useEffect(() => {
-    if (!auth.currentUser) {
-      setIsLoading(false);
-      return;
-    }
-
-    const walletsRef = collection(db, 'users', auth.currentUser.uid, 'wallets');
-    const q = query(walletsRef);
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const next = [];
-        snapshot.forEach((docSnap) => {
-          next.push({ id: docSnap.id, ...docSnap.data() });
-        });
-        setWallets(next);
-        setIsLoading(false);
-      },
-      (error) => {
-        console.error('Erro ao buscar carteiras:', error);
-        setIsLoading(false);
-      },
-    );
-
-    return () => unsubscribe();
-  }, []);
 
   const handleOpenAddModal = () => {
     setErrorMessage('');

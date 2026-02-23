@@ -165,6 +165,8 @@ export const SUPPORTED_COINS = [
   { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', color: '#F7931A' },
   { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', color: '#627EEA' },
   { id: 'solana', symbol: 'SOL', name: 'Solana', color: '#14F195' },
+  { id: 'chainlink', symbol: 'LINK', name: 'Chainlink', color: '#2A5ADA' },
+  { id: 'arbitrum', symbol: 'ARB', name: 'Arbitrum', color: '#28A0F0' },
   { id: 'tether', symbol: 'USDT', name: 'Tether USD', color: '#26A17B' },
   { id: 'usd-coin', symbol: 'USDC', name: 'USDC', color: '#2775CA' },
 ];

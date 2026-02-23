@@ -15,22 +15,15 @@ import {
 import { db, auth } from '../lib/firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query } from 'firebase/firestore';
 import { useWalletBalances } from '../hooks/useWalletBalances';
-
-// Lista de moedas suportadas para adicionar (pode expandir depois)
-const SUPPORTED_COINS = [
-  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', color: '#F7931A' },
-  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', color: '#627EEA' },
-  { id: 'solana', symbol: 'SOL', name: 'Solana', color: '#14F195' },
-  { id: 'chainlink', symbol: 'LINK', name: 'Chainlink', color: '#2A5ADA' },
-  { id: 'arbitrum', symbol: 'ARB', name: 'Arbitrum', color: '#28A0F0' },
-];
+import { useWallets } from '../hooks/useWallets';
+import { useCryptoPrices } from '../hooks/useCryptoPrices';
+import { SUPPORTED_COINS } from '../data/mockDb';
 
 export default function Portfolio() {
   const [portfolioAssets, setPortfolioAssets] = useState([]);
-  const [livePrices, setLivePrices] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  
-  const [wallets, setWallets] = useState([]);
+
+  const { wallets } = useWallets();
   const [syncTrigger, setSyncTrigger] = useState(null);
   const [localSyncWarning, setLocalSyncWarning] = useState('');
   const [showCharts, setShowCharts] = useState(true);
@@ -41,6 +34,10 @@ export default function Portfolio() {
     error: onChainError,
     warning: onChainWarning,
   } = useWalletBalances(wallets, syncTrigger);
+
+  // IDs dos coins no portfólio para buscar preços
+  const coinIds = useMemo(() => portfolioAssets.map(a => a.coinId), [portfolioAssets]);
+  const { prices: livePrices } = useCryptoPrices(coinIds);
 
   // Estados do Modal de Adicionar Ativo
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -76,52 +73,7 @@ export default function Portfolio() {
     return () => unsubscribe(); // Limpeza quando sai da página
   }, []);
 
-  // 1.b LER CARTEIRAS EM TEMPO REAL (sem chamar API externa)
-  useEffect(() => {
-    if (!auth.currentUser) {
-      setWallets([]);
-      return;
-    }
-
-    const walletsRef = collection(db, 'users', auth.currentUser.uid, 'wallets');
-    const q = query(walletsRef);
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const next = [];
-        snapshot.forEach((docSnap) => {
-          next.push({ id: docSnap.id, ...docSnap.data() });
-        });
-        setWallets(next);
-      },
-      (error) => {
-        console.error('Erro ao ler carteiras para o portfólio:', error);
-      },
-    );
-
-    return () => unsubscribe();
-  }, []);
-
-  // 2. BUSCAR PREÇOS REAIS DA COINGECKO
-  useEffect(() => {
-    if (portfolioAssets.length === 0) return;
-
-    const fetchPrices = async () => {
-      try {
-        const coinIds = portfolioAssets.map(a => a.coinId).join(',');
-        const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinIds}&vs_currencies=usd&include_24hr_change=true`);
-        const data = await response.json();
-        setLivePrices(data);
-      } catch (error) {
-        console.error("Erro ao buscar preços:", error);
-      }
-    };
-
-    fetchPrices();
-    const interval = setInterval(fetchPrices, 60000); // Atualiza a cada 1 minuto
-    return () => clearInterval(interval);
-  }, [portfolioAssets]);
+  // Preços agora são geridos pelo hook useCryptoPrices (auto-refresh 60s)
 
   // 3. GRAVAR NOVO ATIVO NO FIREBASE
   const handleAddAsset = async (e) => {
