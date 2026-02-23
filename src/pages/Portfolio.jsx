@@ -245,7 +245,7 @@ export default function Portfolio() {
   }
 
   return (
-    <div className="animate-in fade-in pb-12 grid gap-8 md:grid-cols-[260px,1fr]">
+    <div className="animate-in fade-in pb-12 grid gap-5 md:grid-cols-[260px,1fr]">
       {/* SIDEBAR ESQUERDA */}
       <aside className="space-y-4">
         <div className="bg-[#111] border border-gray-800 rounded-2xl p-5 shadow-xl">
@@ -332,7 +332,7 @@ export default function Portfolio() {
                 setLocalSyncWarning('');
                 setSyncTrigger(Date.now().toString());
               }}
-              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 shadow-sm outline-none focus:outline-none focus:ring-0"
+              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-3 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 shadow-sm outline-none focus:outline-none focus:ring-0"
             >
               {isSyncingOnChain ? (
                 <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
@@ -343,26 +343,26 @@ export default function Portfolio() {
             </button>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl font-bold transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20 outline-none focus:outline-none focus:ring-0 text-sm"
+              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20 outline-none focus:outline-none focus:ring-0"
             >
               <Plus className="w-4 h-4" /> Adicionar transação
             </button>
             <button
               type="button"
-              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-3 py-2.5 rounded-xl font-bold text-xs transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:outline-none focus:ring-0"
+              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-3 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:outline-none focus:ring-0"
             >
               Export
             </button>
             <button
               type="button"
               onClick={() => setShowCharts((prev) => !prev)}
-              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-3 py-2.5 rounded-xl font-bold text-xs transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:outline-none focus:ring-0"
+              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-3 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:outline-none focus:ring-0"
             >
               {showCharts ? 'Ocultar gráficos' : 'Mostrar gráficos'}
             </button>
             <button
               type="button"
-              className="bg-[#111] hover:bg-[#181818] text-gray-400 px-2.5 py-2.5 rounded-xl transition-colors border border-gray-700 outline-none focus:outline-none focus:ring-0 flex items-center justify-center"
+              className="bg-[#111] hover:bg-[#181818] text-gray-400 p-2 rounded-xl transition-colors border border-gray-700 outline-none focus:outline-none focus:ring-0 flex items-center justify-center"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>

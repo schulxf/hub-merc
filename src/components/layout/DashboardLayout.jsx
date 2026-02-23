@@ -90,7 +90,9 @@ const DashboardLayout = () => {
       'airdrop-detail': 'airdrops',
       'defi-positions': 'defi',
       'defi-tools': 'defi',
-      'reminders': 'reminders'
+      'uniswap-calc': 'defi',
+      'reminders': 'reminders',
+      'carteiras-recomendadas': 'portfolio'
     };
     return map[currentRoute] || 'free';
   };
@@ -178,7 +180,7 @@ const DashboardLayout = () => {
         </div>
       )}
 
-      <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 md:p-10 pb-12 z-10 relative">
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 md:p-8 pb-12 z-10 relative">
         
         {/* Rota de Admin Secreta */}
         {currentRoute === 'admin' && userTier === 'admin' ? (
@@ -196,7 +198,7 @@ const DashboardLayout = () => {
             {currentRoute === 'portfolio' && <Portfolio />}
             {currentRoute === 'carteiras-pro' && <Wallets />}
             
-            {['analises', 'defi-tools', 'cursos', 'suporte'].includes(currentRoute) && (
+            {['analises', 'cursos', 'suporte', 'carteiras-recomendadas'].includes(currentRoute) && (
                <MockPage title={getRouteTitle(currentRoute)} />
             )}
           </>
