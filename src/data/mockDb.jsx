@@ -165,6 +165,8 @@ export const SUPPORTED_COINS = [
   { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', color: '#F7931A' },
   { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', color: '#627EEA' },
   { id: 'solana', symbol: 'SOL', name: 'Solana', color: '#14F195' },
+  { id: 'chainlink', symbol: 'LINK', name: 'Chainlink', color: '#2A5ADA' },
+  { id: 'arbitrum', symbol: 'ARB', name: 'Arbitrum', color: '#28A0F0' },
   { id: 'tether', symbol: 'USDT', name: 'Tether USD', color: '#26A17B' },
   { id: 'usd-coin', symbol: 'USDC', name: 'USDC', color: '#2775CA' },
 ];
@@ -173,6 +175,7 @@ export const DEFI_TYPES = [
   { id: 'staking', label: 'Staking', icon: Layers, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
   { id: 'lending', label: 'Lending', icon: ArrowRightLeft, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
   { id: 'pool', label: 'Pool de Liquidez (CLP)', icon: Droplet, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
+  { id: 'uniswap-pool', label: 'Uniswap V3 Pool', icon: Droplet, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
   { id: 'pendle', label: 'Pendle PT', icon: Clock, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
   { id: 'looping', label: 'Looping', icon: RefreshCcw, color: 'text-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/20' },
   { id: 'vault', label: 'Yield Vault', icon: Database, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },

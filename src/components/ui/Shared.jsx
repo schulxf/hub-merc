@@ -1,17 +1,7 @@
 // src/components/ui/Shared.jsx
 import React from 'react';
 import { ExternalLink, Code } from 'lucide-react';
-
-// Função de formatação integrada diretamente para evitar falhas de importação de caminhos relativos
-const fmt = {
-  usd: (n, decimals = 2) =>
-    typeof n === 'number' && !isNaN(n)
-      ? n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-      : '0.00',
-  pct: (n) => (typeof n === 'number' && !isNaN(n) ? Math.abs(n).toFixed(2) : '0.00'),
-  sign: (n) => (n >= 0 ? '+' : ''),
-  arrow: (n) => (n >= 0 ? '▲' : '▼'),
-};
+import { fmt } from '../../lib/utils';
 
 export const StatBadge = ({ value, prefix = '', suffix = '' }) => {
   const isPositive = value >= 0;

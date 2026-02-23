@@ -1,9 +1,6 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { Menu, X, LogOut, Lock, Crown, Shield } from 'lucide-react';
+import React, { useState, useCallback, useMemo, useEffect, Suspense, lazy } from 'react';
+import { Menu, X, LogOut, Lock, Crown, Shield, Loader2 } from 'lucide-react';
 
-// ============================================================================
-// INSTRUÇÕES PARA O VS CODE LOCAL:
-// 1. DESCOMENTE as importações abaixo para ligar aos seus ficheiros reais:
 import { SidebarContent, MENU_CATEGORIES } from './Sidebar';
 import { MockPage } from '../ui/Shared';
 import { auth, db } from '../../lib/firebase';
@@ -16,7 +13,17 @@ import Portfolio from '../../pages/Portfolio';
 import Wallets from '../../pages/Wallets';
 import DeFiPositions from '../../pages/DeFiPositions';
 import RemindersPage from '../../pages/Reminders';
-import AdminPanel from '../../pages/AdminPanel'; // NOVO IMPORT!
+import DeFiToolsLanding from '../../pages/DeFiToolsLanding';
+
+// Lazy imports para páginas pesadas (reduz bundle inicial)
+const AdminPanel = lazy(() => import('../../pages/AdminPanel'));
+
+// Fallback de loading para Suspense
+const PageLoader = () => (
+  <div className="flex items-center justify-center py-20">
+    <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+  </div>
+);
 
 
 // COMPONENTE DE BLOQUEIO (PAYWALL)
@@ -90,7 +97,8 @@ const DashboardLayout = () => {
       'airdrop-detail': 'airdrops',
       'defi-positions': 'defi',
       'defi-tools': 'defi',
-      'reminders': 'reminders'
+      'reminders': 'reminders',
+      'carteiras-recomendadas': 'portfolio'
     };
     return map[currentRoute] || 'free';
   };
@@ -178,29 +186,31 @@ const DashboardLayout = () => {
         </div>
       )}
 
-      <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 md:p-10 pb-12 z-10 relative">
-        
-        {/* Rota de Admin Secreta */}
-        {currentRoute === 'admin' && userTier === 'admin' ? (
-          <AdminPanel />
-        ) : isCurrentRouteLocked ? (
-          /* O NOVO PAYWALL DINÂMICO */
-          <PremiumLockScreen featureName={getRouteTitle(currentRoute)} />
-        ) : (
-          /* ROTAS LIBERADAS */
-          <>
-            {currentRoute === 'airdrops' && <AirdropHub onSelect={openAirdrop} />}
-            {currentRoute === 'airdrop-detail' && selectedAirdrop && <AirdropRouter airdrop={selectedAirdrop} onBack={() => navigateTo('airdrops')} />}
-            {currentRoute === 'defi-positions' && <DeFiPositions />}
-            {currentRoute === 'reminders' && <RemindersPage />}
-            {currentRoute === 'portfolio' && <Portfolio />}
-            {currentRoute === 'carteiras-pro' && <Wallets />}
-            
-            {['analises', 'defi-tools', 'cursos', 'suporte'].includes(currentRoute) && (
-               <MockPage title={getRouteTitle(currentRoute)} />
-            )}
-          </>
-        )}
+      <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 md:p-8 pb-12 z-10 relative">
+        <Suspense fallback={<PageLoader />}>
+          {/* Rota de Admin Secreta */}
+          {currentRoute === 'admin' && userTier === 'admin' ? (
+            <AdminPanel />
+          ) : isCurrentRouteLocked ? (
+            /* O NOVO PAYWALL DINÂMICO */
+            <PremiumLockScreen featureName={getRouteTitle(currentRoute)} />
+          ) : (
+            /* ROTAS LIBERADAS */
+            <>
+              {currentRoute === 'airdrops' && <AirdropHub onSelect={openAirdrop} />}
+              {currentRoute === 'airdrop-detail' && selectedAirdrop && <AirdropRouter airdrop={selectedAirdrop} onBack={() => navigateTo('airdrops')} />}
+              {currentRoute === 'defi-positions' && <DeFiPositions />}
+              {currentRoute === 'reminders' && <RemindersPage />}
+              {currentRoute === 'portfolio' && <Portfolio />}
+              {currentRoute === 'carteiras-pro' && <Wallets />}
+              {currentRoute === 'defi-tools' && <DeFiToolsLanding />}
+
+              {['analises', 'cursos', 'suporte', 'carteiras-recomendadas', 'research'].includes(currentRoute) && (
+                <MockPage title={getRouteTitle(currentRoute)} />
+              )}
+            </>
+          )}
+        </Suspense>
       </main>
 
       {isLogoutModalOpen && (

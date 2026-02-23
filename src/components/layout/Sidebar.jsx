@@ -1,8 +1,9 @@
 import React from 'react';
-import { 
-  ChevronDown, ChevronUp, Briefcase, PieChart, 
-  Wallet, Activity, Zap, LayoutGrid, 
-  ArrowRightLeft, Bell, Layers, GraduationCap, LifeBuoy, LogOut, Lock, Shield
+import {
+  ChevronDown, ChevronUp, Briefcase, PieChart,
+  Activity, Zap, LayoutGrid,
+  ArrowRightLeft, Bell, Layers, GraduationCap, LifeBuoy, LogOut, Lock, Shield,
+  Star, BookOpen
 } from 'lucide-react';
 
 export const MENU_CATEGORIES = [
@@ -12,8 +13,8 @@ export const MENU_CATEGORIES = [
     icon: Briefcase,
     items: [
       { id: 'portfolio', label: 'Portfólio', icon: PieChart, permKey: 'portfolio' },
-      { id: 'carteiras-pro', label: 'Perfil & Carteiras', icon: Wallet, isMock: false, permKey: 'portfolio' },
       { id: 'analises', label: 'Análises', icon: Activity, isMock: true, permKey: 'portfolio' },
+      { id: 'carteiras-recomendadas', label: 'Carteiras', icon: Star, isMock: true, permKey: 'portfolio' },
     ]
   },
   {
@@ -22,10 +23,17 @@ export const MENU_CATEGORIES = [
     icon: Zap,
     items: [
       { id: 'airdrops', label: 'Hub de Airdrops', icon: LayoutGrid, permKey: 'airdrops' },
-      { id: 'defi-tools', label: 'Ferramentas DeFi', icon: ArrowRightLeft, isMock: true, permKey: 'defi' },
-      { id: 'reminders', label: 'Trackers & Agenda', icon: Bell, permKey: 'reminders' },
-      { id: 'defi-positions', label: 'Posições DeFi', icon: Layers, isMock: false, permKey: 'defi' },
+      { id: 'defi-tools', label: 'Ferramentas DeFi', icon: ArrowRightLeft, permKey: 'defi' },
+      { id: 'defi-positions', label: 'Posições DeFi', icon: Layers, permKey: 'defi' },
+      { id: 'reminders', label: 'Trackers e Agenda', icon: Bell, permKey: 'reminders' },
     ]
+  },
+  {
+    id: 'research',
+    label: 'Research',
+    icon: BookOpen,
+    isMock: true,
+    permKey: 'free'
   },
   {
     id: 'cursos',
@@ -133,35 +141,41 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
 
     </nav>
     
-    <div className="mt-auto pt-6 border-t border-gray-800/80">
-      <div className="flex items-center justify-between px-2">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-[#181C25] border border-gray-700 flex items-center justify-center text-white font-bold text-xs shadow-sm uppercase">
-            {userEmail ? userEmail[0] : 'M'}
-          </div>
-          <div className="flex flex-col">
-            <p className="text-sm font-bold text-white leading-tight w-28 truncate" title={userEmail}>
-              {userEmail || 'Membro VIP'}
-            </p>
-            <span className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${
-              userTier === 'admin' ? 'text-purple-400' :
-              userTier === 'vip' ? 'text-yellow-500' : 
-              userTier === 'pro' ? 'text-blue-400' : 'text-gray-500'
-            }`}>
-               {userTier === 'admin' ? 'Administrador' :
-                userTier === 'vip' ? 'VIP Consulting' : 
-                userTier === 'pro' ? 'Premium' : 'Plano Gratuito'}
-            </span>
-          </div>
+    <div className="mt-auto pt-6 border-t border-gray-800/80 space-y-2">
+      <button
+        onClick={() => navigateTo('carteiras-pro')}
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors outline-none ${
+          currentRoute === 'carteiras-pro'
+            ? 'bg-[#181C25] border border-gray-700/50'
+            : 'hover:bg-[#11141A]'
+        }`}
+      >
+        <div className="w-8 h-8 rounded-md bg-[#181C25] border border-gray-700 flex items-center justify-center text-white font-bold text-xs shadow-sm uppercase flex-shrink-0">
+          {userEmail ? userEmail[0] : 'M'}
         </div>
-        <button 
-          onClick={onLogout}
-          className="p-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors outline-none"
-          title="Terminar Sessão"
-        >
-          <LogOut className="w-4 h-4" />
-        </button>
-      </div>
+        <div className="flex flex-col text-left min-w-0 flex-1">
+          <p className="text-sm font-bold text-white leading-tight truncate" title={userEmail}>
+            {userEmail || 'Membro VIP'}
+          </p>
+          <span className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${
+            userTier === 'admin' ? 'text-purple-400' :
+            userTier === 'vip' ? 'text-yellow-500' :
+            userTier === 'pro' ? 'text-blue-400' : 'text-gray-500'
+          }`}>
+            {userTier === 'admin' ? 'Administrador' :
+             userTier === 'vip' ? 'VIP Consulting' :
+             userTier === 'pro' ? 'Premium' : 'Plano Gratuito'}
+          </span>
+        </div>
+      </button>
+      <button
+        onClick={onLogout}
+        className="w-full flex items-center gap-3 px-3 py-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors outline-none"
+        title="Terminar Sessão"
+      >
+        <LogOut className="w-4 h-4" />
+        <span className="text-xs font-semibold">Terminar Sessão</span>
+      </button>
     </div>
   </>
 );

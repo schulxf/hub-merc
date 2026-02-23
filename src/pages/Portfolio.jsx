@@ -15,22 +15,16 @@ import {
 import { db, auth } from '../lib/firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query } from 'firebase/firestore';
 import { useWalletBalances } from '../hooks/useWalletBalances';
-
-// Lista de moedas suportadas para adicionar (pode expandir depois)
-const SUPPORTED_COINS = [
-  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', color: '#F7931A' },
-  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', color: '#627EEA' },
-  { id: 'solana', symbol: 'SOL', name: 'Solana', color: '#14F195' },
-  { id: 'chainlink', symbol: 'LINK', name: 'Chainlink', color: '#2A5ADA' },
-  { id: 'arbitrum', symbol: 'ARB', name: 'Arbitrum', color: '#28A0F0' },
-];
+import { useWallets } from '../hooks/useWallets';
+import { useCryptoPrices } from '../hooks/useCryptoPrices';
+import { SUPPORTED_COINS } from '../data/mockDb';
+import { lookupCoinGeckoId } from '../lib/web3Api';
 
 export default function Portfolio() {
   const [portfolioAssets, setPortfolioAssets] = useState([]);
-  const [livePrices, setLivePrices] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  
-  const [wallets, setWallets] = useState([]);
+
+  const { wallets } = useWallets();
   const [syncTrigger, setSyncTrigger] = useState(null);
   const [localSyncWarning, setLocalSyncWarning] = useState('');
   const [showCharts, setShowCharts] = useState(true);
@@ -42,12 +36,20 @@ export default function Portfolio() {
     warning: onChainWarning,
   } = useWalletBalances(wallets, syncTrigger);
 
+  // IDs dos coins no portfólio para buscar preços
+  const coinIds = useMemo(() => portfolioAssets.map(a => a.coinId), [portfolioAssets]);
+  const { prices: livePrices } = useCryptoPrices(coinIds);
+
   // Estados do Modal de Adicionar Ativo
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCoin, setSelectedCoin] = useState('bitcoin');
   const [amount, setAmount] = useState('');
   const [buyPrice, setBuyPrice] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Estados para importar tokens on-chain para o portfólio
+  const [addingOnChainToken, setAddingOnChainToken] = useState(null);
+  const [isLookingUp, setIsLookingUp] = useState(null); // ID do token sendo buscado
 
   // 1. LER DADOS DO FIREBASE EM TEMPO REAL
   useEffect(() => {
@@ -76,52 +78,7 @@ export default function Portfolio() {
     return () => unsubscribe(); // Limpeza quando sai da página
   }, []);
 
-  // 1.b LER CARTEIRAS EM TEMPO REAL (sem chamar API externa)
-  useEffect(() => {
-    if (!auth.currentUser) {
-      setWallets([]);
-      return;
-    }
-
-    const walletsRef = collection(db, 'users', auth.currentUser.uid, 'wallets');
-    const q = query(walletsRef);
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const next = [];
-        snapshot.forEach((docSnap) => {
-          next.push({ id: docSnap.id, ...docSnap.data() });
-        });
-        setWallets(next);
-      },
-      (error) => {
-        console.error('Erro ao ler carteiras para o portfólio:', error);
-      },
-    );
-
-    return () => unsubscribe();
-  }, []);
-
-  // 2. BUSCAR PREÇOS REAIS DA COINGECKO
-  useEffect(() => {
-    if (portfolioAssets.length === 0) return;
-
-    const fetchPrices = async () => {
-      try {
-        const coinIds = portfolioAssets.map(a => a.coinId).join(',');
-        const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinIds}&vs_currencies=usd&include_24hr_change=true`);
-        const data = await response.json();
-        setLivePrices(data);
-      } catch (error) {
-        console.error("Erro ao buscar preços:", error);
-      }
-    };
-
-    fetchPrices();
-    const interval = setInterval(fetchPrices, 60000); // Atualiza a cada 1 minuto
-    return () => clearInterval(interval);
-  }, [portfolioAssets]);
+  // Preços agora são geridos pelo hook useCryptoPrices (auto-refresh 60s)
 
   // 3. GRAVAR NOVO ATIVO NO FIREBASE
   const handleAddAsset = async (e) => {
@@ -169,7 +126,57 @@ export default function Portfolio() {
     }
   };
 
-  // 5. CÁLCULOS DO PORTFÓLIO
+  // 5. IMPORTAR TOKEN ON-CHAIN PARA O PORTFÓLIO
+  const handleAddOnChainToken = async (token) => {
+    if (!auth.currentUser) return;
+    setIsLookingUp(token.id);
+
+    try {
+      const cgMatch = await lookupCoinGeckoId(token.symbol);
+      const coinId = cgMatch?.id || token.symbol.toLowerCase();
+
+      setAddingOnChainToken({
+        coinId,
+        symbol: token.symbol,
+        name: cgMatch?.name || token.name,
+        amount: token.amount,
+      });
+    } catch (error) {
+      console.error('Erro ao buscar token:', error);
+    } finally {
+      setIsLookingUp(null);
+    }
+  };
+
+  const handleSaveOnChainAsset = async () => {
+    if (!auth.currentUser || !addingOnChainToken) return;
+    setIsSaving(true);
+
+    try {
+      const t = addingOnChainToken;
+      const assetRef = doc(db, 'users', auth.currentUser.uid, 'portfolio', t.coinId);
+
+      await setDoc(assetRef, {
+        coinId: t.coinId,
+        symbol: t.symbol,
+        name: t.name,
+        color: '#6366F1',
+        amount: parseFloat(t.amount),
+        averageBuyPrice: 0,
+        source: 'onchain',
+        updatedAt: new Date().toISOString(),
+      });
+
+      setAddingOnChainToken(null);
+    } catch (error) {
+      console.error('Erro ao guardar ativo on-chain:', error);
+      alert('Erro ao guardar ativo. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 6. CÁLCULOS DO PORTFÓLIO
   const portfolioStats = useMemo(() => {
     let totalValue = 0;
     let totalInvested = 0;
@@ -245,7 +252,7 @@ export default function Portfolio() {
   }
 
   return (
-    <div className="animate-in fade-in pb-12 grid gap-8 md:grid-cols-[260px,1fr]">
+    <div className="animate-in fade-in pb-12 grid gap-5 md:grid-cols-[260px,1fr]">
       {/* SIDEBAR ESQUERDA */}
       <aside className="space-y-4">
         <div className="bg-[#111] border border-gray-800 rounded-2xl p-5 shadow-xl">
@@ -332,7 +339,7 @@ export default function Portfolio() {
                 setLocalSyncWarning('');
                 setSyncTrigger(Date.now().toString());
               }}
-              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 shadow-sm outline-none focus:outline-none focus:ring-0"
+              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-3 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 shadow-sm outline-none focus:outline-none focus:ring-0"
             >
               {isSyncingOnChain ? (
                 <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
@@ -343,26 +350,26 @@ export default function Portfolio() {
             </button>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl font-bold transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20 outline-none focus:outline-none focus:ring-0 text-sm"
+              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20 outline-none focus:outline-none focus:ring-0"
             >
               <Plus className="w-4 h-4" /> Adicionar transação
             </button>
             <button
               type="button"
-              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-3 py-2.5 rounded-xl font-bold text-xs transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:outline-none focus:ring-0"
+              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-3 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:outline-none focus:ring-0"
             >
               Export
             </button>
             <button
               type="button"
               onClick={() => setShowCharts((prev) => !prev)}
-              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-3 py-2.5 rounded-xl font-bold text-xs transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:outline-none focus:ring-0"
+              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-3 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:outline-none focus:ring-0"
             >
               {showCharts ? 'Ocultar gráficos' : 'Mostrar gráficos'}
             </button>
             <button
               type="button"
-              className="bg-[#111] hover:bg-[#181818] text-gray-400 px-2.5 py-2.5 rounded-xl transition-colors border border-gray-700 outline-none focus:outline-none focus:ring-0 flex items-center justify-center"
+              className="bg-[#111] hover:bg-[#181818] text-gray-400 p-2 rounded-xl transition-colors border border-gray-700 outline-none focus:outline-none focus:ring-0 flex items-center justify-center"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>
@@ -794,37 +801,54 @@ export default function Portfolio() {
                     <th className="p-3 text-xs font-bold text-gray-400 uppercase tracking-wider">
                       Valor (USD)
                     </th>
+                    <th className="p-3 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">
+                      Ação
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800/50">
-                  {onChainTokens.map((token) => (
-                    <tr key={token.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="p-3">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-white">{token.symbol}</span>
-                          <span className="text-xs text-gray-500">{token.name}</span>
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <span className="font-mono text-sm text-gray-100">
-                          {token.amount?.toLocaleString('en-US', {
-                            minimumFractionDigits: 4,
-                            maximumFractionDigits: 8,
-                          })}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <span className="font-mono text-sm text-gray-100">
-                          {typeof token.valueUsd === 'number'
-                            ? `$${token.valueUsd.toLocaleString('en-US', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}`
-                            : '—'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {onChainTokens.map((token) => {
+                    const alreadyAdded = portfolioAssets.some(a => a.symbol?.toUpperCase() === token.symbol?.toUpperCase());
+                    return (
+                      <tr key={token.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="p-3">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-white">{token.symbol}</span>
+                            <span className="text-xs text-gray-500">{token.name}</span>
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <span className="font-mono text-sm text-gray-100">
+                            {token.amount?.toLocaleString('en-US', {
+                              minimumFractionDigits: 4,
+                              maximumFractionDigits: 8,
+                            })}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <span className="font-mono text-sm text-gray-100">
+                            {typeof token.valueUsd === 'number'
+                              ? `$${token.valueUsd.toLocaleString('en-US', {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}`
+                              : '—'}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          <button
+                            onClick={() => handleAddOnChainToken(token)}
+                            disabled={alreadyAdded || isLookingUp === token.id}
+                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed outline-none"
+                          >
+                            {isLookingUp === token.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin inline" />
+                            ) : alreadyAdded ? 'Adicionado' : '+ Portfólio'}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -900,6 +924,39 @@ export default function Portfolio() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CONFIRMAR IMPORTAÇÃO ON-CHAIN */}
+      {addingOnChainToken && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#151515] border border-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h2 className="text-2xl font-bold text-white mb-6">Adicionar ao Portfólio</h2>
+            <div className="space-y-4">
+              <div className="bg-[#0a0a0a] p-4 rounded-xl border border-gray-800 space-y-2">
+                <p className="text-sm text-gray-400">Token: <span className="text-white font-bold">{addingOnChainToken.symbol}</span></p>
+                <p className="text-sm text-gray-400">Nome: <span className="text-white">{addingOnChainToken.name}</span></p>
+                <p className="text-sm text-gray-400">Quantidade: <span className="text-white font-mono">{addingOnChainToken.amount.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 8 })}</span></p>
+                <p className="text-sm text-gray-400">CoinGecko ID: <span className="text-blue-400 font-mono text-xs">{addingOnChainToken.coinId}</span></p>
+              </div>
+              <p className="text-xs text-gray-500">O ativo será adicionado com preço médio $0. Pode editar depois.</p>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setAddingOnChainToken(null)}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-300 hover:bg-gray-800 transition-colors outline-none"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveOnChainAsset}
+                  disabled={isSaving}
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 outline-none"
+                >
+                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirmar'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
