@@ -13,6 +13,7 @@ import { useUserProfile } from '../../hooks/useUserProfile';
 import AirdropHub from '../../pages/AirdropHub';
 import AirdropRouter from '../../pages/AirdropDetail';
 import Portfolio from '../../pages/Portfolio';
+import Wallets from '../../pages/Wallets';
 import DeFiPositions from '../../pages/DeFiPositions';
 import RemindersPage from '../../pages/Reminders';
 import AdminPanel from '../../pages/AdminPanel'; // NOVO IMPORT!
@@ -193,8 +194,9 @@ const DashboardLayout = () => {
             {currentRoute === 'defi-positions' && <DeFiPositions />}
             {currentRoute === 'reminders' && <RemindersPage />}
             {currentRoute === 'portfolio' && <Portfolio />}
+            {currentRoute === 'carteiras-pro' && <Wallets />}
             
-            {['carteiras-pro', 'analises', 'defi-tools', 'cursos', 'suporte'].includes(currentRoute) && (
+            {['analises', 'defi-tools', 'cursos', 'suporte'].includes(currentRoute) && (
                <MockPage title={getRouteTitle(currentRoute)} />
             )}
           </>

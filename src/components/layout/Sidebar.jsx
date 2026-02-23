@@ -12,7 +12,7 @@ export const MENU_CATEGORIES = [
     icon: Briefcase,
     items: [
       { id: 'portfolio', label: 'Portfólio', icon: PieChart, permKey: 'portfolio' },
-      { id: 'carteiras-pro', label: 'Carteiras Cripto', icon: Wallet, isMock: true, permKey: 'portfolio' },
+      { id: 'carteiras-pro', label: 'Perfil & Carteiras', icon: Wallet, isMock: false, permKey: 'portfolio' },
       { id: 'analises', label: 'Análises', icon: Activity, isMock: true, permKey: 'portfolio' },
     ]
   },
