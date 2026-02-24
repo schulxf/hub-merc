@@ -164,7 +164,7 @@ export default function AdminPanel() {
       <div className="flex border-b border-gray-800 mb-8">
         <button
           onClick={() => setActiveTab('users')}
-          className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-colors outline-none focus:outline-none ${
+          className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-colors outline-none ${
             activeTab === 'users' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-300'
           }`}
         >
@@ -172,7 +172,7 @@ export default function AdminPanel() {
         </button>
         <button
           onClick={() => setActiveTab('permissions')}
-          className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-colors outline-none focus:outline-none ${
+          className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-colors outline-none ${
             activeTab === 'permissions' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-300'
           }`}
         >
@@ -180,7 +180,7 @@ export default function AdminPanel() {
         </button>
         <button
           onClick={() => setActiveTab('agenda')}
-          className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-colors outline-none focus:outline-none ${
+          className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-colors outline-none ${
             activeTab === 'agenda' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-300'
           }`}
         >
@@ -199,7 +199,7 @@ export default function AdminPanel() {
                 placeholder="Buscar cliente por email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg pl-10 pr-4 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg pl-10 pr-4 py-2.5 text-white focus:border-blue-500 transition-colors text-sm"
               />
             </div>
             <div className="text-sm text-gray-400 font-medium px-4">
@@ -244,7 +244,7 @@ export default function AdminPanel() {
                         <select
                           value={user.tier || 'free'}
                           onChange={(e) => handleTierChange(user.id, e.target.value)}
-                          className={`bg-[#0a0a0a] border rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wider focus:outline-none transition-colors cursor-pointer ${
+                          className={`bg-[#0a0a0a] border rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                             user.tier === 'vip' ? 'text-yellow-500 border-yellow-500/30' :
                             user.tier === 'pro' ? 'text-blue-400 border-blue-500/30' :
                             user.tier === 'admin' ? 'text-purple-500 border-purple-500/30' :
@@ -289,7 +289,7 @@ export default function AdminPanel() {
                 <select
                   value={permissions[mod.id]}
                   onChange={(e) => setPermissions({ ...permissions, [mod.id]: e.target.value })}
-                  className="bg-[#151515] border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                  className="bg-[#151515] border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:border-blue-500"
                 >
                   <option value="free">Livre (Free, Pro, VIP)</option>
                   <option value="pro">Apenas Assinantes (Pro, VIP)</option>
@@ -303,7 +303,7 @@ export default function AdminPanel() {
             <button
               onClick={handleSavePermissions}
               disabled={isSavingPerms}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 outline-none focus:outline-none disabled:opacity-50"
+              className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 outline-none disabled:opacity-50"
             >
               {isSavingPerms ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
               Salvar Regras

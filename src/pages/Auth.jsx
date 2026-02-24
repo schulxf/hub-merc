@@ -94,7 +94,7 @@ export default function Auth() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-800 rounded-xl bg-[#0a0a0a] text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-800 rounded-xl bg-[#0a0a0a] text-white placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   placeholder="exemplo@mercurius.com"
                 />
               </div>
@@ -113,7 +113,7 @@ export default function Auth() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-800 rounded-xl bg-[#0a0a0a] text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-800 rounded-xl bg-[#0a0a0a] text-white placeholder-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   placeholder="••••••••"
                 />
               </div>
@@ -122,7 +122,7 @@ export default function Auth() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-[#111] transition-all disabled:opacity-50"
+              className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-[#111] transition-all disabled:opacity-50"
             >
               {isSubmitting ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -152,7 +152,7 @@ export default function Auth() {
                 setIsLoginMode(!isLoginMode);
                 setError('');
               }}
-              className="text-sm font-medium text-gray-400 hover:text-white transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
+              className="text-sm font-medium text-gray-400 hover:text-white transition-colors outline-none focus:ring-2 focus:ring-blue-500 "
             >
               {isLoginMode 
                 ? 'Ainda não é membro? Registre-se agora' 

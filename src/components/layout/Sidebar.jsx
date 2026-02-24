@@ -67,7 +67,7 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
               <>
                 <button 
                   onClick={() => toggleMenu(category.id)} 
-                  className="w-full flex items-center justify-between px-3 py-2 text-gray-400 hover:text-white transition-colors outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] select-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
+                  className="w-full flex items-center justify-between px-3 py-2 text-gray-400 hover:text-white transition-colors outline-none focus:ring-2 focus:ring-blue-500 select-none "
                 >
                   <div className="flex items-center gap-3">
                     <category.icon className="w-4 h-4" />
@@ -88,7 +88,7 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
                         <button
                           key={item.id}
                           onClick={() => navigateTo(item.id)}
-                          className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-r-lg transition-all font-medium text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] select-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] ${
+                          className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-r-lg transition-all font-medium text-sm outline-none focus:ring-2 focus:ring-blue-500 select-none  ${
                             isActive ? 'bg-[#181C25] text-white border-y border-r border-gray-700/50 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-[#11141A]'
                           }`}
                         >
@@ -106,7 +106,7 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
             ) : (
               <button
                 onClick={() => navigateTo(category.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all font-bold text-xs uppercase tracking-wider outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] select-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all font-bold text-xs uppercase tracking-wider outline-none focus:ring-2 focus:ring-blue-500 select-none  ${
                   currentRoute === category.id ? 'bg-[#181C25] text-white border border-gray-700/50 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-[#11141A]'
                 }`}
               >
@@ -127,7 +127,7 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
           <p className="text-[10px] font-bold text-purple-500/70 uppercase tracking-widest mb-3">Gestão</p>
           <button
             onClick={() => navigateTo('admin')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] select-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 select-none  ${
               currentRoute === 'admin' 
                 ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-sm' 
                 : 'text-purple-500/70 hover:text-purple-400 hover:bg-purple-500/10'

@@ -614,13 +614,13 @@ export default function UniswapCalc() {
                   <InfoTooltip text="O valor total em dólares que você deseja alocar na posição de liquidez.">
                     <label className="text-sm text-gray-400 font-medium">Capital Principal ($)</label>
                   </InfoTooltip>
-                  <input type="number" value={principal} onChange={(e) => setPrincipal(Number(e.target.value))} className="w-full bg-[#0D0F13] border border-gray-700 rounded-xl px-4 py-3.5 text-white mt-3 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-base" placeholder="3000" />
+                  <input type="number" value={principal} onChange={(e) => setPrincipal(Number(e.target.value))} className="w-full bg-[#0D0F13] border border-gray-700 rounded-xl px-4 py-3.5 text-white mt-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-base" placeholder="3000" />
                 </div>
                 <div>
                   <InfoTooltip text="Por quantos dias você pretende manter a posição aberta.">
                     <label className="text-sm text-gray-400 font-medium">Dias na Posição</label>
                   </InfoTooltip>
-                  <input type="number" value={days} onChange={(e) => { setDays(Number(e.target.value)); setManualRangeEdit(false); }} min={1} max={365} className="w-full bg-[#0D0F13] border border-gray-700 rounded-xl px-4 py-3.5 text-white mt-3 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-base" placeholder="7" />
+                  <input type="number" value={days} onChange={(e) => { setDays(Number(e.target.value)); setManualRangeEdit(false); }} min={1} max={365} className="w-full bg-[#0D0F13] border border-gray-700 rounded-xl px-4 py-3.5 text-white mt-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-base" placeholder="7" />
                   <div className="flex flex-wrap gap-2 mt-3">
                     {[1, 7, 30, 90, 180].map(d => (
                       <button key={d} onClick={() => { setDays(d); setManualRangeEdit(false); }} className={`text-sm px-4 py-2 rounded-lg transition-all font-medium ${days === d ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50' : 'bg-[#0D0F13] text-gray-400 border border-gray-700 hover:border-gray-600'}`}>
@@ -649,7 +649,7 @@ export default function UniswapCalc() {
                       </button>
                     ))}
                   </div>
-                  <input type="number" value={impliedVolatility} onChange={(e) => { setImpliedVolatility(Number(e.target.value)); setManualRangeEdit(false); }} min={1} max={200} className="w-full bg-[#0D0F13] border border-gray-700 rounded-xl px-4 py-3.5 text-white mt-3 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-base" />
+                  <input type="number" value={impliedVolatility} onChange={(e) => { setImpliedVolatility(Number(e.target.value)); setManualRangeEdit(false); }} min={1} max={200} className="w-full bg-[#0D0F13] border border-gray-700 rounded-xl px-4 py-3.5 text-white mt-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-base" />
                   <input type="range" value={impliedVolatility} onChange={(e) => { setImpliedVolatility(Number(e.target.value)); setManualRangeEdit(false); }} min={10} max={150} className="w-full mt-3 h-2 accent-blue-500 cursor-pointer" />
                   <div className="flex justify-between text-xs text-gray-600 mt-1">
                     <span>10%</span>
@@ -661,7 +661,7 @@ export default function UniswapCalc() {
                   <InfoTooltip text="Taxa de rendimento anual esperada das taxas de trading na pool.">
                     <label className="text-sm text-gray-400 font-medium">APR Esperado (%)</label>
                   </InfoTooltip>
-                  <input type="number" value={expectedAPR} onChange={(e) => setExpectedAPR(Number(e.target.value))} min={0} max={500} className="w-full bg-[#0D0F13] border border-gray-700 rounded-xl px-4 py-3.5 text-white mt-3 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-base" placeholder="60" />
+                  <input type="number" value={expectedAPR} onChange={(e) => setExpectedAPR(Number(e.target.value))} min={0} max={500} className="w-full bg-[#0D0F13] border border-gray-700 rounded-xl px-4 py-3.5 text-white mt-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-base" placeholder="60" />
                 </div>
               </div>
             </div>
@@ -687,11 +687,11 @@ export default function UniswapCalc() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <InfoTooltip text="Preço mínimo do range."><label className="text-sm text-gray-400 font-medium">Preço Mínimo</label></InfoTooltip>
-                  <input type="number" value={priceLow} onChange={handleManualRangeChange(setPriceLow)} className="w-full bg-[#0D0F13] border border-gray-700 rounded-xl px-4 py-3.5 text-white mt-3 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-base" />
+                  <input type="number" value={priceLow} onChange={handleManualRangeChange(setPriceLow)} className="w-full bg-[#0D0F13] border border-gray-700 rounded-xl px-4 py-3.5 text-white mt-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-base" />
                 </div>
                 <div>
                   <InfoTooltip text="Preço máximo do range."><label className="text-sm text-gray-400 font-medium">Preço Máximo</label></InfoTooltip>
-                  <input type="number" value={priceHigh} onChange={handleManualRangeChange(setPriceHigh)} className="w-full bg-[#0D0F13] border border-gray-700 rounded-xl px-4 py-3.5 text-white mt-3 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-base" />
+                  <input type="number" value={priceHigh} onChange={handleManualRangeChange(setPriceHigh)} className="w-full bg-[#0D0F13] border border-gray-700 rounded-xl px-4 py-3.5 text-white mt-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-base" />
                 </div>
               </div>
             </div>
