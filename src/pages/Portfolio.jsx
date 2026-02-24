@@ -257,9 +257,11 @@ function PortfolioContent() {
                 </thead>
                 <tbody className="divide-y divide-gray-800/50">
                   {onChainTokens.map((token) => {
-                    const alreadyAdded = portfolioAssets.some(
-                      (a) => a.symbol?.toUpperCase() === token.symbol?.toUpperCase(),
-                    );
+                    const alreadyAdded = Array.isArray(portfolioAssets)
+                      ? portfolioAssets.some(
+                          (a) => a.symbol?.toUpperCase() === token.symbol?.toUpperCase(),
+                        )
+                      : false;
                     return (
                       <tr key={token.id} className="hover:bg-white/[0.02] transition-colors">
                         <td className="p-3">
