@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -9,6 +9,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { auth } from '../../lib/firebase';
+import { getPortfolioSnapshots } from '../../lib/portfolioSnapshots';
 import { usePortfolioContext } from './PortfolioContext';
 
 // ---------------------------------------------------------------------------
@@ -77,7 +79,9 @@ function periodToDays(period) {
  * Shows the total portfolio value over the last 30, 90, or 365 days. The
  * displayed period is controlled by toggle buttons in the card header.
  *
- * Data source: mock data while real Firestore snapshots are unavailable.
+ * Data source: Real Firestore snapshots with graceful fallback to mock data
+ * if fewer than 2 snapshots exist.
+ *
  * Animations are disabled for rendering performance.
  *
  * Consumes `portfolioAssets` and `livePrices` from PortfolioContext; must be
@@ -88,19 +92,62 @@ function periodToDays(period) {
 const ChartAreaEvolution = React.memo(function ChartAreaEvolution() {
   const { portfolioAssets } = usePortfolioContext();
   const [selectedPeriod, setSelectedPeriod] = useState('30D');
+  const [snapshots, setSnapshots] = useState([]);
+  const [isLoadingSnapshots, setIsLoadingSnapshots] = useState(true);
 
   /**
-   * Slice the full 365-day mock series down to the selected period window.
-   * Re-computed only when the period button or underlying asset list changes.
+   * Load real portfolio snapshots from Firestore on mount.
+   * Attempts to fetch up to 365 days of snapshots.
+   * Errors are caught and logged without breaking the UI.
+   */
+  useEffect(() => {
+    async function loadSnapshots() {
+      if (!auth.currentUser) {
+        setIsLoadingSnapshots(false);
+        return;
+      }
+
+      try {
+        setIsLoadingSnapshots(true);
+        const loaded = await getPortfolioSnapshots(auth.currentUser.uid, 365);
+        setSnapshots(loaded || []);
+      } catch (error) {
+        console.error('[ChartAreaEvolution] Erro ao carregar snapshots:', error);
+        setSnapshots([]);
+      } finally {
+        setIsLoadingSnapshots(false);
+      }
+    }
+
+    loadSnapshots();
+  }, []);
+
+  /**
+   * Prepare chart data:
+   * - If >= 2 real snapshots exist, use them
+   * - Otherwise, fallback to mock data
+   * Filter by selected period (30D, 90D, 365D).
    */
   const chartData = useMemo(() => {
-    const allData = generateMockHistoryData(365);
     const days = periodToDays(selectedPeriod);
+
+    // Use real snapshots if we have at least 2
+    if (snapshots.length >= 2) {
+      return snapshots
+        .slice(-days)
+        .map((snapshot) => ({
+          date: new Date(snapshot.timestamp).toLocaleDateString('pt-PT'),
+          value: Math.round(snapshot.totalValue),
+        }));
+    }
+
+    // Fallback: mock data
+    const allData = generateMockHistoryData(365);
     return allData.slice(-days);
     // portfolioAssets intentionally included so the chart re-seeds when the
     // portfolio changes (future: derive start value from actual totals).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPeriod, portfolioAssets]);
+  }, [selectedPeriod, snapshots, portfolioAssets]);
 
   return (
     <div className="bg-[#0f1419] border border-gray-800 rounded-lg p-4">
