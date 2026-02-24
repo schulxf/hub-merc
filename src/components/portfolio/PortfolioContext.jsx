@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../../lib/firebase';
 import { useWallets } from '../../hooks/useWallets';
@@ -40,11 +40,16 @@ export function PortfolioProvider({ children }) {
 
   // Derive coin IDs from portfolio for price fetching
   const coinIds = useMemo(
-    () => portfolioAssets.map((asset) => asset.coinId),
+    () => {
+      if (!Array.isArray(portfolioAssets)) {
+        return [];
+      }
+      return portfolioAssets.map((asset) => asset.coinId);
+    },
     [portfolioAssets],
   );
 
-  const { prices: livePrices } = useCryptoPrices(coinIds);
+  const { prices: livePrices = {} } = useCryptoPrices(coinIds) || {};
 
   // Subscribe to Firestore portfolio collection in real-time
   useEffect(() => {
@@ -75,18 +80,46 @@ export function PortfolioProvider({ children }) {
     return () => unsubscribe();
   }, []);
 
-  const value = {
-    portfolioAssets,
-    livePrices,
-    isLoading,
-    syncTrigger,
-    setSyncTrigger,
-    onChainTokens,
-    isSyncingOnChain,
-    onChainError,
-    onChainWarning,
-    wallets,
-  };
+  /**
+   * Stable trigger callback — identity is preserved across renders so consumers
+   * that only depend on setSyncTrigger are not unnecessarily re-rendered.
+   */
+  const triggerSync = useCallback(() => {
+    setSyncTrigger(Date.now());
+  }, []);
+
+  /**
+   * Memoised context value so that the object reference only changes when one
+   * of the underlying pieces of state actually changes.  Without this memo
+   * every render of PortfolioProvider creates a new object, causing every
+   * context consumer to re-render even when the data is identical.
+   */
+  const value = useMemo(
+    () => ({
+      portfolioAssets,
+      livePrices,
+      isLoading,
+      syncTrigger,
+      setSyncTrigger,
+      triggerSync,
+      onChainTokens,
+      isSyncingOnChain,
+      onChainError,
+      onChainWarning,
+      wallets,
+    }),
+    [
+      portfolioAssets,
+      livePrices,
+      isLoading,
+      syncTrigger,
+      onChainTokens,
+      isSyncingOnChain,
+      onChainError,
+      onChainWarning,
+      wallets,
+    ],
+  );
 
   return (
     <PortfolioContext.Provider value={value}>
@@ -106,6 +139,7 @@ export function PortfolioProvider({ children }) {
  *   isLoading: boolean,
  *   syncTrigger: string | null,
  *   setSyncTrigger: Function,
+ *   triggerSync: Function,
  *   onChainTokens: Array<object>,
  *   isSyncingOnChain: boolean,
  *   onChainError: string | null,

@@ -70,12 +70,18 @@ const ChartArea = React.memo(function ChartArea() {
    * Transform raw portfolio assets into the shape expected by Recharts.
    * Each entry: { name: string, value: number (USD), color: string }
    * Assets without a live price or with zero balance are filtered out.
+   *
+   * livePrices[coinId] is { usd: number, usd_24h_change: number } — we must
+   * read the nested `.usd` field, not use the object itself as a number.
    */
   const chartData = useMemo(() => {
+    if (!Array.isArray(portfolioAssets)) {
+      return [];
+    }
     return portfolioAssets
       .map((asset) => ({
         name: asset.name,
-        value: asset.amount * (livePrices[asset.coinId] || 0),
+        value: asset.amount * (livePrices?.[asset.coinId]?.usd ?? 0),
         color: asset.color,
       }))
       .filter((item) => item.value > 0);
