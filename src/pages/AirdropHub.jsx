@@ -10,7 +10,7 @@ const AirdropHub = ({ onSelect }) => (
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {AIRDROPS_DB.map((airdrop) => (
-        <div key={airdrop.id} onClick={() => onSelect(airdrop)} className="bg-[#111] border border-gray-800 hover:border-gray-600 rounded-2xl cursor-pointer transform hover:-translate-y-1 transition-all duration-300 shadow-xl relative overflow-hidden flex flex-col group outline-none select-none focus:outline-none focus:ring-0">
+        <div key={airdrop.id} onClick={() => onSelect(airdrop)} className="bg-[#111] border border-gray-800 hover:border-gray-600 rounded-2xl cursor-pointer transform hover:-translate-y-1 transition-all duration-300 shadow-xl relative overflow-hidden flex flex-col group outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] select-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]">
           <div className="h-32 w-full bg-[#1A1D24] relative overflow-hidden">
             <img src={airdrop.image} alt={airdrop.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-[#111] to-transparent"></div>
