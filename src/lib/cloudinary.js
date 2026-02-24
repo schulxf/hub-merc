@@ -33,10 +33,10 @@ export async function uploadAirdropImage(file, airdropId) {
     // Criar FormData para upload
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('upload_preset', 'unsigned_upload'); // OBRIGATÓRIO para unsigned upload
     formData.append('api_key', CLOUDINARY_API_KEY);
     formData.append('tags', `airdrop,${airdropId}`); // Organizar com tags
     formData.append('folder', `mercurius-airdrops/${airdropId}`); // Organizar em pastas
-    formData.append('resource_type', 'auto'); // Detectar tipo automaticamente
 
     console.log('[cloudinary] Iniciando upload para Cloudinary...', {
       file: file.name,
