@@ -1,5 +1,16 @@
-// Camada de integração Web3 via Moralis API.
-// Busca saldos on-chain de carteiras EVM e Solana.
+/**
+ * Camada de integração Web3 via Moralis API.
+ * Busca saldos on-chain de carteiras EVM e Solana.
+ *
+ * Usa Zod para validar respostas — se a API mudar, detectamos automaticamente.
+ */
+import {
+  MoralisErc20ListSchema,
+  MoralisNativeBalanceSchema,
+  MoralisSplListSchema,
+  MoralisSolNativeSchema,
+  safeParse,
+} from '../schemas/web3.schema';
 
 const MORALIS_API_KEY = typeof import.meta !== 'undefined' && import.meta.env
   ? import.meta.env.VITE_MORALIS_API_KEY
@@ -85,37 +96,49 @@ async function fetchEvmBalances(address, chain = 'eth') {
   const tokensData = await tokensRes.json();
   const nativeData = await nativeRes.json();
 
+  // Validar schemas com Zod
+  const validatedTokens = safeParse(MoralisErc20ListSchema, tokensData, `Moralis/ERC20/${chain}`);
+  const validatedNative = safeParse(MoralisNativeBalanceSchema, nativeData, `Moralis/Native/${chain}`);
+
   const tokens = [];
 
   // ETH nativo (ou nativo da chain)
   const nativeSymbols = { eth: 'ETH', bsc: 'BNB', polygon: 'MATIC', arbitrum: 'ETH', avalanche: 'AVAX' };
   const nativeNames = { eth: 'Ethereum', bsc: 'BNB', polygon: 'Polygon', arbitrum: 'Ethereum (Arbitrum)', avalanche: 'Avalanche' };
-  const nativeBalance = parseFloat(nativeData.balance) / 1e18;
 
-  if (nativeBalance > 0.0001) {
-    tokens.push({
-      symbol: nativeSymbols[chain] || 'ETH',
-      name: nativeNames[chain] || 'Native Token',
-      amount: nativeBalance,
-      decimals: 18,
-    });
+  if (validatedNative) {
+    const nativeBalance = parseFloat(validatedNative.balance) / 1e18;
+    if (nativeBalance > 0.0001) {
+      tokens.push({
+        symbol: nativeSymbols[chain] || 'ETH',
+        name: nativeNames[chain] || 'Native Token',
+        amount: nativeBalance,
+        decimals: 18,
+      });
+    }
+  } else {
+    console.warn(`[web3Api] Falha ao validar saldo nativo de ${chain}`);
   }
 
   // ERC-20 tokens (com filtragem de scam)
-  for (const t of (Array.isArray(tokensData) ? tokensData : [])) {
-    if (isSpamToken(t)) continue;
+  if (validatedTokens) {
+    for (const t of validatedTokens) {
+      if (isSpamToken(t)) continue;
 
-    const decimals = Number(t.decimals) || 18;
-    const amount = parseFloat(t.balance) / Math.pow(10, decimals);
-    if (amount < 0.001) continue; // dust threshold aumentado
+      const decimals = Number(t.decimals) || 18;
+      const amount = parseFloat(t.balance) / Math.pow(10, decimals);
+      if (amount < 0.001) continue; // dust threshold aumentado
 
-    tokens.push({
-      symbol: t.symbol || 'UNKNOWN',
-      name: t.name || t.symbol || 'Unknown Token',
-      amount,
-      decimals,
-      contractAddress: t.token_address,
-    });
+      tokens.push({
+        symbol: t.symbol || 'UNKNOWN',
+        name: t.name || t.symbol || 'Unknown Token',
+        amount,
+        decimals,
+        contractAddress: t.token_address,
+      });
+    }
+  } else {
+    console.warn(`[web3Api] Falha ao validar tokens ERC-20 de ${chain}`);
   }
 
   return tokens;
@@ -133,10 +156,13 @@ async function fetchSolBalances(address) {
     const solRes = await fetch(`${MORALIS_SOL}/account/mainnet/${address}/balance`, { headers });
     if (solRes.ok) {
       const solData = await solRes.json();
-      solBalance = parseFloat(solData.solana || solData.lamports / 1e9 || 0);
+      const validatedSol = safeParse(MoralisSolNativeSchema, solData, 'Moralis/SOL/native');
+      if (validatedSol) {
+        solBalance = parseFloat(validatedSol.solana || validatedSol.lamports / 1e9 || 0);
+      }
     }
   } catch (e) {
-    console.warn('Erro ao buscar SOL nativo:', e);
+    console.warn('[web3Api] Erro ao buscar SOL nativo:', e);
   }
 
   // SPL Tokens
@@ -149,22 +175,28 @@ async function fetchSolBalances(address) {
     const res = await fetch(`${MORALIS_SOL}/account/mainnet/${address}/tokens`, { headers });
     if (res.ok) {
       const data = await res.json();
-      for (const t of (Array.isArray(data) ? data : [])) {
-        if (isSpamToken(t)) continue;
+      const validatedTokens = safeParse(MoralisSplListSchema, data, 'Moralis/SPL/tokens');
 
-        const decimals = Number(t.decimals) || 9;
-        const amount = parseFloat(t.amount) / Math.pow(10, decimals);
-        if (amount < 0.001) continue;
+      if (validatedTokens) {
+        for (const t of validatedTokens) {
+          if (isSpamToken(t)) continue;
 
-        tokens.push({
-          symbol: t.symbol || 'UNKNOWN',
-          name: t.name || t.symbol || 'Unknown SPL Token',
-          amount,
-        });
+          const decimals = Number(t.decimals) || 9;
+          const amount = parseFloat(t.amount) / Math.pow(10, decimals);
+          if (amount < 0.001) continue;
+
+          tokens.push({
+            symbol: t.symbol || 'UNKNOWN',
+            name: t.name || t.symbol || 'Unknown SPL Token',
+            amount,
+          });
+        }
+      } else {
+        console.warn('[web3Api] Falha ao validar SPL tokens de Solana');
       }
     }
   } catch (e) {
-    console.warn('Erro ao buscar SPL tokens:', e);
+    console.warn('[web3Api] Erro ao buscar SPL tokens:', e);
   }
 
   return tokens;
