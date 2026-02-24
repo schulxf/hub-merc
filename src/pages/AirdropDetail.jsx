@@ -11,7 +11,7 @@ import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 
 const CustomPerpdexGuide = ({ airdrop, onBack }) => (
   <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto pb-24 md:pb-12">
-    <button onClick={onBack} className="text-gray-400 hover:text-white mb-6 flex items-center gap-2 transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]">
+    <button onClick={onBack} className="text-gray-400 hover:text-white mb-6 flex items-center gap-2 transition-colors outline-none focus:ring-2 focus:ring-blue-500 ">
       ← Voltar para o Hub
     </button>
     <div className="bg-[#111] border border-gray-800 rounded-2xl p-8 mb-8">
@@ -129,7 +129,7 @@ const StandardAirdropGuide = ({ airdrop, onBack }) => {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto pb-24 md:pb-12">
-      <button onClick={onBack} className="text-gray-400 hover:text-white mb-6 flex items-center gap-2 transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]">
+      <button onClick={onBack} className="text-gray-400 hover:text-white mb-6 flex items-center gap-2 transition-colors outline-none focus:ring-2 focus:ring-blue-500 ">
         ← Voltar para o Hub
       </button>
 
@@ -167,7 +167,7 @@ const StandardAirdropGuide = ({ airdrop, onBack }) => {
             <span className="text-gray-500 mr-1 hidden sm:inline">Constância:</span>
             <button
               onClick={handleSetReminder}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 transition-colors px-3 py-2 rounded-lg border outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] select-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] ${
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 transition-colors px-3 py-2 rounded-lg border outline-none focus:ring-2 focus:ring-blue-500 select-none  ${
                 savedInternal
                   ? 'bg-green-500/10 border-green-500/20 text-green-400'
                   : 'bg-gray-900/50 hover:bg-gray-800 border-gray-800 text-gray-400 hover:text-white'
@@ -178,7 +178,7 @@ const StandardAirdropGuide = ({ airdrop, onBack }) => {
             </button>
             <button
               onClick={handleGoogleCalendar}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 transition-colors bg-gray-900/50 hover:bg-gray-800 px-3 py-2 rounded-lg border border-gray-800 text-gray-400 hover:text-white outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] select-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 transition-colors bg-gray-900/50 hover:bg-gray-800 px-3 py-2 rounded-lg border border-gray-800 text-gray-400 hover:text-white outline-none focus:ring-2 focus:ring-blue-500 select-none "
             >
               <CalendarIcon className="w-4 h-4" />
               <span>Google Agenda</span>
@@ -203,7 +203,7 @@ const StandardAirdropGuide = ({ airdrop, onBack }) => {
             <div key={phase.id} className="bg-[#111] border border-gray-800 rounded-xl overflow-hidden transition-all duration-200">
               <button
                 onClick={() => togglePhase(phase.id)}
-                className="w-full px-5 py-4 flex items-center justify-between bg-[#151515] hover:bg-[#1a1a1a] transition-colors text-left outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] select-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
+                className="w-full px-5 py-4 flex items-center justify-between bg-[#151515] hover:bg-[#1a1a1a] transition-colors text-left outline-none focus:ring-2 focus:ring-blue-500 select-none "
               >
                 <div className="flex items-center gap-4">
                   <div
@@ -250,7 +250,7 @@ const StandardAirdropGuide = ({ airdrop, onBack }) => {
                                       href={sub.url}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-xs flex items-center justify-between px-3 py-2 bg-[#0A0A0A] hover:bg-gray-900 border border-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors group outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
+                                      className="text-xs flex items-center justify-between px-3 py-2 bg-[#0A0A0A] hover:bg-gray-900 border border-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors group outline-none focus:ring-2 focus:ring-blue-500 "
                                     >
                                       <span className="truncate pr-2">{sub.name}</span>
                                       <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 text-gray-600 group-hover:text-white" />
@@ -263,7 +263,7 @@ const StandardAirdropGuide = ({ airdrop, onBack }) => {
                               {task.link && <ExternalBtn href={task.link}>Acessar</ExternalBtn>}
                               <button
                                 onClick={() => toggleTask(task.id)}
-                                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-colors border outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] select-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] ${
+                                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-colors border outline-none focus:ring-2 focus:ring-blue-500 select-none  ${
                                   isTaskDone
                                     ? 'text-black border-transparent hover:opacity-80'
                                     : 'bg-transparent text-gray-400 border-gray-600 hover:border-gray-400 hover:text-white'
