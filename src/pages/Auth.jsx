@@ -39,8 +39,13 @@ export default function Auth() {
         setError('Este email já está registado.');
       } else if (err.code === 'auth/weak-password') {
         setError('A palavra-passe deve ter pelo menos 6 caracteres.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Demasiadas tentativas. Tente novamente mais tarde.');
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Erro de ligação. Verifique a sua conexão à internet.');
       } else {
-        setError(err.message);
+        // Generic user-friendly message for unhandled errors
+        setError('Ocorreu um erro. Por favor, tente novamente.');
       }
     } finally {
       setIsSubmitting(false);
