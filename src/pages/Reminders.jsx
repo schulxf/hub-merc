@@ -114,16 +114,33 @@ const RemindersPage = () => {
 
     // Personal tracker reminders
     const personalEvents = reminders
-      .filter(r => r.date && r.date.startsWith(dateStr))
+      .filter(r => r.date && typeof r.date === 'string' && r.date.startsWith(dateStr))
       .map(r => ({ ...r, isGlobal: false, eventColor: r.type?.toLowerCase() === 'testnet' ? 'blue' : 'green' }));
 
     // Global events from Firestore
-    const globalEvts = globalEvents
-      .filter(e => e.date === dateStr)
+    const globalEvts = (globalEvents || [])
+      .filter(e => e.date && e.date === dateStr)
       .map(e => ({ ...e, isGlobal: true, eventColor: e.type === 'tge' ? 'yellow' : e.type === 'launch' ? 'green' : 'red' }));
 
     return [...personalEvents, ...globalEvts];
   }, [currentMonth, reminders, globalEvents]);
+
+  if (isLoadingReminders) {
+    return (
+      <div className="animate-in fade-in pb-24 md:pb-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Trackers e Agenda</h1>
+            <p className="text-gray-400">Acompanhe capital, custos e sua agenda de interações.</p>
+          </div>
+        </div>
+        <div className="text-center py-16 border-2 border-dashed border-gray-800 rounded-2xl bg-[#111]">
+          <div className="w-8 h-8 border-4 border-gray-700 border-t-blue-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-in fade-in pb-24 md:pb-12">
@@ -266,16 +283,17 @@ const RemindersPage = () => {
                     {day}
                   </span>
                   <div className="mt-1 space-y-0.5">
-                    {events.slice(0, 3).map((evt, ei) => {
+                    {events.slice(0, 3).map((evt) => {
                       const colorMap = {
                         blue: 'bg-blue-500/20 text-blue-400',
                         green: 'bg-green-500/20 text-green-400',
                         yellow: 'bg-yellow-500/20 text-yellow-400',
                         red: 'bg-red-500/20 text-red-400',
                       };
+                      const eventKey = `${evt.id || evt.title}-${evt.isGlobal ? 'global' : 'personal'}`;
                       return (
                         <div
-                          key={ei}
+                          key={eventKey}
                           className={`text-[9px] md:text-[10px] font-medium px-1 md:px-1.5 py-0.5 rounded truncate ${colorMap[evt.eventColor] || colorMap.blue}`}
                           title={`${evt.title}${evt.isGlobal ? ' (Global)' : ''}`}
                         >
