@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Bell, Trash2, List, Calendar as CalendarIcon, Clock, Edit2, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { auth, db } from '../lib/firebase';
+import { doc, onSnapshot, setDoc, updateDoc, deleteField, collection } from 'firebase/firestore';
 import { storage } from '../lib/utils';
-import { db } from '../lib/firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
 
 const RemindersPage = () => {
-  const [reminders, setReminders] = useState(() => storage.getArray('mercurius_reminders'));
+  const [reminders, setReminders] = useState([]);
+  const [isLoadingReminders, setIsLoadingReminders] = useState(true);
   const [editingTracker, setEditingTracker] = useState(null);
   const [editForm, setEditForm] = useState({ capital: 0, costs: 0, points: 0, txs: 0, streak: 0 });
   const [viewTab, setViewTab] = useState('list');
@@ -13,6 +14,32 @@ const RemindersPage = () => {
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [globalEvents, setGlobalEvents] = useState([]);
+
+  // Fetch personal reminders from Firestore (per-user)
+  useEffect(() => {
+    if (!auth.currentUser) {
+      setReminders([]);
+      setIsLoadingReminders(false);
+      return;
+    }
+
+    const remindersRef = doc(db, 'users', auth.currentUser.uid, 'profile');
+    const unsub = onSnapshot(remindersRef, (snap) => {
+      if (snap.exists() && snap.data().trackers) {
+        setReminders(snap.data().trackers || []);
+      } else {
+        // Fallback to empty array if no trackers exist
+        setReminders([]);
+      }
+      setIsLoadingReminders(false);
+    }, (error) => {
+      console.error('Error loading reminders:', error);
+      setIsLoadingReminders(false);
+      // Fallback to localStorage as backup
+      setReminders(storage.getArray('mercurius_reminders') || []);
+    });
+    return () => unsub();
+  }, []);
 
   // Fetch global events from Firestore
   useEffect(() => {
@@ -27,9 +54,18 @@ const RemindersPage = () => {
     return () => unsub();
   }, []);
 
-  const persist = useCallback((updated) => {
+  const persist = useCallback(async (updated) => {
     setReminders(updated);
-    storage.set('mercurius_reminders', updated);
+    if (!auth.currentUser) return;
+
+    try {
+      const userRef = doc(db, 'users', auth.currentUser.uid, 'profile');
+      await updateDoc(userRef, { trackers: updated });
+    } catch (error) {
+      console.error('Error saving reminders:', error);
+      // Fallback to localStorage if Firestore fails
+      storage.set('mercurius_reminders', updated);
+    }
   }, []);
 
   const removeReminder = useCallback((id) => persist(reminders.filter((r) => r.id !== id)), [reminders, persist]);
@@ -169,7 +205,11 @@ const RemindersPage = () => {
                 <div className="flex-shrink-0 w-full md:w-auto flex items-center justify-between md:justify-end gap-4 mt-4 md:mt-0 border-t border-gray-800 md:border-t-0 pt-4 md:pt-0">
                   <div className="text-xs text-gray-400 flex items-center gap-1.5 md:hidden lg:flex">
                     <CalendarIcon className="w-3.5 h-3.5" />
-                    <span>Próx: <strong className="text-gray-200">{new Date(rem.date).toLocaleDateString()}</strong></span>
+                    {rem.date ? (
+                      <span>Próx: <strong className="text-gray-200">{new Date(rem.date).toLocaleDateString()}</strong></span>
+                    ) : (
+                      <span>Próx: <strong className="text-gray-500">Sem data</strong></span>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => openEditModal(rem)} className="text-xs flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded-lg font-semibold transition-colors outline-none">

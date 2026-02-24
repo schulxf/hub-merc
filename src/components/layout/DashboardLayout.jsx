@@ -113,7 +113,15 @@ const DashboardLayout = () => {
   }, []);
 
   const confirmLogout = useCallback(async () => {
-    try { await signOut(auth); } catch (error) { console.error("Erro:", error); }
+    try {
+      await signOut(auth);
+      // Modal will auto-close when user state changes in App.jsx
+      setIsLogoutModalOpen(false);
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      alert('Erro ao fazer logout. Por favor, tente novamente.');
+      setIsLogoutModalOpen(false);
+    }
   }, []);
 
   const navigateTo = useCallback((route) => {

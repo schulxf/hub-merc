@@ -103,13 +103,20 @@ const ResultCard = ({ title, hodlValue, lpValue, tooltip }) => {
   );
 };
 
-// Metric Card Component
+// Metric Card Component - color map to avoid dynamic class purging
+const colorMap = {
+  blue: 'text-blue-400',
+  emerald: 'text-emerald-400',
+  red: 'text-red-400',
+  purple: 'text-purple-400',
+};
+
 const MetricCard = ({ label, value, subValue, color = 'blue', tooltip }) => (
   <div className="bg-[#111] border border-gray-800 rounded-xl p-4">
     <InfoTooltip text={tooltip}>
       <span className="text-xs text-gray-500 font-medium">{label}</span>
     </InfoTooltip>
-    <p className={`text-2xl font-bold mt-2 text-${color}-400`}>{value}</p>
+    <p className={`text-2xl font-bold mt-2 ${colorMap[color] || colorMap.blue}`}>{value}</p>
     {subValue && <p className="text-xs text-gray-600 mt-2">{subValue}</p>}
   </div>
 );
@@ -192,44 +199,52 @@ export default function UniswapCalc() {
     return 90;
   };
 
-  // Auto-IV Engine
-  const calculateVolatilityFromHistory = async (tokenId, days = 30) => {
+  // Auto-IV Engine - refactored to avoid recursive state corruption
+  const calculateVolatilityFromHistory = async (tokenId, initialDays = 30) => {
     setIsCalculatingIV(true);
     setIvCalculationStatus(null);
-    try {
-      const response = await fetch(
-        `https://api.coingecko.com/api/v3/coins/${tokenId}/market_chart?vs_currency=usd&days=${days}&interval=daily`
-      );
-      if (!response.ok) throw new Error('API Error');
-      const data = await response.json();
-      const prices = data.prices.map(p => p[1]);
-      if (prices.length < 5) throw new Error('Insufficient data');
-      const returns = [];
-      for (let i = 1; i < prices.length; i++) {
-        returns.push(Math.log(prices[i] / prices[i - 1]));
+
+    // Try multiple day ranges without recursion
+    const dayRanges = [initialDays, 7, 1];
+
+    for (const days of dayRanges) {
+      try {
+        const response = await fetch(
+          `https://api.coingecko.com/api/v3/coins/${tokenId}/market_chart?vs_currency=usd&days=${days}&interval=daily`
+        );
+        if (!response.ok) throw new Error('API Error');
+        const data = await response.json();
+        const prices = data.prices?.map(p => p[1]);
+        if (!prices || prices.length < 5) throw new Error('Insufficient data');
+
+        const returns = [];
+        for (let i = 1; i < prices.length; i++) {
+          returns.push(Math.log(prices[i] / prices[i - 1]));
+        }
+        const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+        const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
+        const stdDev = Math.sqrt(variance);
+        const annualizedVol = stdDev * Math.sqrt(365) * 100;
+
+        setImpliedVolatility(Math.round(annualizedVol));
+        setIvCalculationStatus('success');
+        setIvSource(`${days}d_history`);
+        setIsCalculatingIV(false);
+        return Math.round(annualizedVol);
+      } catch (error) {
+        console.error(`HV calculation error for ${days}d:`, error);
+        // Continue to next day range
+        continue;
       }
-      const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
-      const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
-      const stdDev = Math.sqrt(variance);
-      const annualizedVol = stdDev * Math.sqrt(365) * 100;
-      setImpliedVolatility(Math.round(annualizedVol));
-      setIvCalculationStatus('success');
-      setIvSource(`${days}d_history`);
-      setIsCalculatingIV(false);
-      return Math.round(annualizedVol);
-    } catch (error) {
-      console.error('HV calculation error:', error);
-      if (days > 7) {
-        const fallbackResult = await calculateVolatilityFromHistory(tokenId, 7);
-        if (fallbackResult) return fallbackResult;
-      }
-      const estimatedIV = getSmartFallbackIV(tokenId);
-      setImpliedVolatility(estimatedIV);
-      setIvCalculationStatus('fallback');
-      setIvSource('correlation_estimate');
-      setIsCalculatingIV(false);
-      return estimatedIV;
     }
+
+    // All attempts failed, use fallback
+    const estimatedIV = getSmartFallbackIV(tokenId);
+    setImpliedVolatility(estimatedIV);
+    setIvCalculationStatus('fallback');
+    setIvSource('correlation_estimate');
+    setIsCalculatingIV(false);
+    return estimatedIV;
   };
 
   const getSmartFallbackIV = (tokenId) => {
@@ -414,7 +429,11 @@ export default function UniswapCalc() {
   const resetAutoRange = () => setManualRangeEdit(false);
 
   const savePosition = async () => {
-    if (!selectedToken || !spotPrice || !calculations) return;
+    if (!selectedToken || !spotPrice || !calculations || !auth.currentUser) {
+      console.error('Cannot save position: missing required data or user not authenticated');
+      alert('Erro: Utilizador não autenticado. Por favor, faça login novamente.');
+      return;
+    }
     const newPosition = {
       id: Date.now(), timestamp: new Date().toISOString(), mode: activeTab,
       tokenSymbol: selectedToken.symbol, tokenName: selectedToken.name, tokenId: selectedToken.id,

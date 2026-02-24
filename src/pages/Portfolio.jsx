@@ -188,7 +188,7 @@ export default function Portfolio() {
       const currentValue = asset.amount * currentPrice;
       const investedValue = asset.amount * asset.averageBuyPrice;
       const profitLoss = currentValue - investedValue;
-      const profitLossPct = (profitLoss / investedValue) * 100;
+      const profitLossPct = investedValue > 0 ? (profitLoss / investedValue) * 100 : 0;
 
       const change24hPct = typeof liveData.usd_24h_change === 'number' ? liveData.usd_24h_change : 0;
       const safeDenominator = 1 + change24hPct / 100;
@@ -487,8 +487,8 @@ export default function Portfolio() {
                 <p className="text-sm font-semibold text-white">
                   {portfolioStats.bestPerformer.name} ({portfolioStats.bestPerformer.symbol})
                 </p>
-                <p className="mt-1 text-lg font-extrabold text-green-400">
-                  +
+                <p className={`mt-1 text-lg font-extrabold ${portfolioStats.bestPerformer.profitLossPct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {portfolioStats.bestPerformer.profitLossPct >= 0 ? '+' : ''}
                   {portfolioStats.bestPerformer.profitLossPct.toFixed(2)}%
                 </p>
               </>
@@ -507,7 +507,8 @@ export default function Portfolio() {
                 <p className="text-sm font-semibold text-white">
                   {portfolioStats.worstPerformer.name} ({portfolioStats.worstPerformer.symbol})
                 </p>
-                <p className="mt-1 text-lg font-extrabold text-red-400">
+                <p className={`mt-1 text-lg font-extrabold ${portfolioStats.worstPerformer.profitLossPct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {portfolioStats.worstPerformer.profitLossPct >= 0 ? '+' : ''}
                   {portfolioStats.worstPerformer.profitLossPct.toFixed(2)}%
                 </p>
               </>

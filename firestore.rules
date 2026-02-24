@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'admin';
+    }
+
+    function isAssessor() {
+      return isSignedIn() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'assessor';
+    }
+
+    function getUserTier() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier;
+    }
+
+    // User documents: each user can only read/write their own data
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+
+      // Allow admins to read all user documents (for user management)
+      allow read: if isAdmin();
+      allow update: if isAdmin() && request.resource.data.tier in ['free', 'pro', 'vip', 'admin', 'assessor'];
+    }
+
+    // User subcollections: portfolio, defi, wallets, etc.
+    match /users/{uid}/{document=**} {
+      allow read, write: if isOwner(uid);
+      allow read: if isAssessor() &&
+                     exists(/databases/$(database)/documents/users/$(uid)/profile) &&
+                     get(/databases/$(database)/documents/users/$(uid)/profile).data.assessorIds[request.auth.uid] == true;
+    }
+
+    // Public content: readable by all authenticated users, writable by admins only
+    match /public_content/{document=**} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Settings: global configuration, readable by all, writable by admins only
+    match /settings/{document=**} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

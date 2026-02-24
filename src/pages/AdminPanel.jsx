@@ -233,9 +233,9 @@ export default function AdminPanel() {
                     <tr key={user.id} className="hover:bg-white/5 transition-colors">
                       <td className="px-6 py-4 font-medium text-white flex items-center gap-3">
                         <div className="w-8 h-8 rounded-md bg-gray-800 border border-gray-700 flex items-center justify-center font-bold text-xs uppercase">
-                          {user.email[0]}
+                          {user.email?.[0]?.toUpperCase() || '?'}
                         </div>
-                        {user.email}
+                        {user.email || 'Sem email'}
                       </td>
                       <td className="px-6 py-4 text-gray-500">
                         {user.createdAt ? new Date(user.createdAt).toLocaleDateString('pt-BR') : 'Desconhecido'}
