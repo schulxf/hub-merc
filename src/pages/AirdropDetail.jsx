@@ -66,11 +66,14 @@ const StandardAirdropGuide = ({ airdrop, onBack }) => {
 
   useEffect(() => () => clearTimeout(savedTimer.current), []);
 
-  if (!airdrop.steps || airdrop.steps.length === 0) {
+  // Usar `phases` (Firestore) ou `steps` (mockDb/backward compatibility)
+  const phases = airdrop.phases || airdrop.steps || [];
+
+  if (!phases || phases.length === 0) {
     return <MockPage title={`Guia ${airdrop.name}`} />;
   }
 
-  const totalTasks = airdrop.steps.reduce((acc, p) => acc + p.tasks.length, 0);
+  const totalTasks = phases.reduce((acc, p) => acc + p.tasks.length, 0);
   const progressPercentage = totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0;
 
   // 2. GRAVAR NA NUVEM QUANDO CLICA NO BOTÃO "MARCAR FEITO"
@@ -194,7 +197,7 @@ const StandardAirdropGuide = ({ airdrop, onBack }) => {
       </div>
 
       <div className="space-y-3">
-        {airdrop.steps.map((phase) => {
+        {phases.map((phase) => {
           const isExpanded = expandedPhase === phase.id;
           const phaseTasksDone = phase.tasks.filter((t) => completedTasks.includes(t.id)).length;
           const isPhaseComplete = phaseTasksDone === phase.tasks.length && phase.tasks.length > 0;

@@ -1,41 +1,120 @@
-import React from 'react';
-import { ArrowRight } from 'lucide-react';
-import { AIRDROPS_DB } from '../data/mockDb';
+import React, { useState, useEffect } from 'react';
+import { ArrowRight, Loader2 } from 'lucide-react';
+import { db } from '../lib/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
-const AirdropHub = ({ onSelect }) => (
-  <div className="animate-in fade-in pb-24 md:pb-12">
-    <div className="mb-8">
-      <h1 className="text-3xl font-bold text-white mb-2">Hub de Airdrops</h1>
-      <p className="text-gray-400">Descubra e acompanhe as melhores oportunidades selecionadas.</p>
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {AIRDROPS_DB.map((airdrop) => (
-        <div key={airdrop.id} onClick={() => onSelect(airdrop)} className="bg-[#111] border border-gray-800 hover:border-gray-600 rounded-2xl cursor-pointer transform hover:-translate-y-1 transition-all duration-300 shadow-xl relative overflow-hidden flex flex-col group outline-none focus:ring-2 focus:ring-blue-500 select-none ">
-          <div className="h-32 w-full bg-[#1A1D24] relative overflow-hidden">
-            <img src={airdrop.image} alt={airdrop.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-[#111] to-transparent"></div>
-            <span className="absolute top-4 left-4 bg-black/80 px-3 py-1 rounded border border-gray-800 text-[10px] font-bold uppercase text-gray-300">
-              {airdrop.type}
-            </span>
-          </div>
-          <div className="p-6 relative z-10 flex-1 flex flex-col">
-            <h3 className="text-xl font-extrabold text-white mb-2">{airdrop.name}</h3>
-            <p className="text-sm text-gray-500 mb-6 line-clamp-2">{airdrop.description}</p>
-            <div className="mt-auto flex items-center justify-between border-t border-gray-800/60 pt-4">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-gray-500 uppercase">Custo Est.</span>
-                <span className="text-sm font-semibold text-gray-300">{airdrop.cost}</span>
-              </div>
-              <div className="p-2 rounded-full bg-[#151515] border border-gray-800 transition-colors" style={{ color: airdrop.accent }}>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-              </div>
-            </div>
-          </div>
-          <div className="absolute bottom-0 left-0 w-full h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ backgroundColor: airdrop.accent }}></div>
+const AirdropHub = ({ onSelect }) => {
+  const [airdrops, setAirdrops] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // Buscar airdrops do Firestore em tempo real
+    const airdropsColl = collection(db, 'public_content', 'airdrops');
+    const unsubscribe = onSnapshot(
+      airdropsColl,
+      (snapshot) => {
+        const airdropsList = [];
+        snapshot.forEach((doc) => {
+          airdropsList.push({
+            id: doc.data().id,
+            ...doc.data(),
+          });
+        });
+        // Ordenar por nome para consistência
+        airdropsList.sort((a, b) => a.name.localeCompare(b.name));
+        setAirdrops(airdropsList);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Erro ao buscar airdrops:', err);
+        setError('Erro ao carregar guias de airdrops');
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="animate-in fade-in pb-24 md:pb-12 flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 text-blue-500 animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Carregando guias de airdrops...</p>
         </div>
-      ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="animate-in fade-in pb-24 md:pb-12 bg-red-500/10 border border-red-500/20 rounded-2xl p-6 max-w-md">
+        <p className="text-red-400 font-semibold">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="animate-in fade-in pb-24 md:pb-12">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2">Hub de Airdrops</h1>
+        <p className="text-gray-400">Descubra e acompanhe as melhores oportunidades selecionadas.</p>
+      </div>
+
+      {airdrops.length === 0 ? (
+        <div className="text-center py-16">
+          <p className="text-gray-400 text-lg">Nenhuma guia de airdrop disponível no momento.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {airdrops.map((airdrop) => (
+            <div
+              key={airdrop.id}
+              onClick={() => onSelect(airdrop)}
+              className="bg-[#111] border border-gray-800 hover:border-gray-600 rounded-2xl cursor-pointer transform hover:-translate-y-1 transition-all duration-300 shadow-xl relative overflow-hidden flex flex-col group outline-none focus:ring-2 focus:ring-blue-500 select-none"
+            >
+              <div className="h-32 w-full bg-[#1A1D24] relative overflow-hidden">
+                {airdrop.imageUrl && (
+                  <>
+                    <img
+                      src={airdrop.imageUrl}
+                      alt={airdrop.name}
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300"
+                    />
+                    <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-[#111] to-transparent"></div>
+                  </>
+                )}
+                <span className="absolute top-4 left-4 bg-black/80 px-3 py-1 rounded border border-gray-800 text-[10px] font-bold uppercase text-gray-300">
+                  {airdrop.type}
+                </span>
+              </div>
+              <div className="p-6 relative z-10 flex-1 flex flex-col">
+                <h3 className="text-xl font-extrabold text-white mb-2">{airdrop.name}</h3>
+                <p className="text-sm text-gray-500 mb-6 line-clamp-2">{airdrop.description}</p>
+                <div className="mt-auto flex items-center justify-between border-t border-gray-800/60 pt-4">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-gray-500 uppercase">Custo Est.</span>
+                    <span className="text-sm font-semibold text-gray-300">{airdrop.cost}</span>
+                  </div>
+                  <div
+                    className="p-2 rounded-full bg-[#151515] border border-gray-800 transition-colors"
+                    style={{ color: airdrop.accent }}
+                  >
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+              </div>
+              <div
+                className="absolute bottom-0 left-0 w-full h-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{ backgroundColor: airdrop.accent }}
+              ></div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 export default AirdropHub;
