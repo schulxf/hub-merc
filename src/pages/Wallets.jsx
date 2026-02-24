@@ -157,7 +157,7 @@ export default function Wallets() {
               </div>
               <button
                 onClick={handleOpenAddModal}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-bold text-xs transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20 outline-none focus:outline-none focus:ring-0"
+                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-bold text-xs transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20 outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
               >
                 <Plus className="w-4 h-4" /> Adicionar carteira
               </button>
@@ -236,7 +236,7 @@ export default function Wallets() {
                           <td className="p-4 text-right">
                             <button
                               onClick={() => openRemoveModal(wallet)}
-                              className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors outline-none focus:outline-none focus:ring-0"
+                              className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
                               title="Remover carteira"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -313,14 +313,14 @@ export default function Wallets() {
                 <button
                   type="button"
                   onClick={handleCloseAddModal}
-                  className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-300 hover:bg-gray-800 transition-colors outline-none focus:outline-none focus:ring-0"
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-300 hover:bg-gray-800 transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 outline-none focus:outline-none focus:ring-0"
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
                 >
                   {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Guardar Carteira'}
                 </button>

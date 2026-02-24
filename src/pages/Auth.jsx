@@ -152,7 +152,7 @@ export default function Auth() {
                 setIsLoginMode(!isLoginMode);
                 setError('');
               }}
-              className="text-sm font-medium text-gray-400 hover:text-white transition-colors outline-none focus:outline-none focus:ring-0"
+              className="text-sm font-medium text-gray-400 hover:text-white transition-colors outline-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]"
             >
               {isLoginMode 
                 ? 'Ainda não é membro? Registre-se agora' 
