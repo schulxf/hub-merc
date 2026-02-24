@@ -10,7 +10,7 @@ const AirdropHub = ({ onSelect }) => {
 
   useEffect(() => {
     // Buscar airdrops do Firestore em tempo real
-    const airdropsColl = collection(db, 'public_content', 'airdrops');
+    const airdropsColl = collection(db, 'airdrops');
     const unsubscribe = onSnapshot(
       airdropsColl,
       (snapshot) => {

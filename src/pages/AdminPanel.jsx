@@ -78,7 +78,7 @@ export default function AdminPanel() {
 
   // 4. Buscar airdrops do CMS
   useEffect(() => {
-    const airdropsColl = collection(db, 'public_content', 'airdrops');
+    const airdropsColl = collection(db, 'airdrops');
     const unsubscribe = onSnapshot(airdropsColl, (snapshot) => {
       const airdropsData = [];
       snapshot.forEach((doc) => {
@@ -285,7 +285,7 @@ export default function AdminPanel() {
       }
 
       // Salvar no Firestore
-      const airdropRef = doc(db, 'public_content', 'airdrops', airdropId);
+      const airdropRef = doc(db, 'airdrops', airdropId);
       await setDoc(airdropRef, {
         id: airdropId,
         name: airdropForm.name,
@@ -322,7 +322,7 @@ export default function AdminPanel() {
       }
 
       // Deletar documento do Firestore
-      const airdropRef = doc(db, 'public_content', 'airdrops', airdrop.firestoreId);
+      const airdropRef = doc(db, 'airdrops', airdrop.firestoreId);
       await deleteDoc(airdropRef);
 
       // Limpar formulário se era o selecionado
