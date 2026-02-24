@@ -110,9 +110,10 @@ const PortfolioSidebar = React.memo(function PortfolioSidebar({ onDeleteAsset })
    * (highest first) so the most valuable holdings appear at the top.
    */
   const enrichedAssets = useMemo(() => {
-    return portfolioAssets
+    const assets = Array.isArray(portfolioAssets) ? portfolioAssets : [];
+    return assets
       .map((asset) => {
-        const liveData = livePrices[asset.coinId] ?? {
+        const liveData = livePrices?.[asset.coinId] ?? {
           usd: asset.averageBuyPrice ?? 0,
           usd_24h_change: 0,
         };

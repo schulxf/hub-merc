@@ -75,10 +75,13 @@ const ChartArea = React.memo(function ChartArea() {
    * read the nested `.usd` field, not use the object itself as a number.
    */
   const chartData = useMemo(() => {
+    if (!Array.isArray(portfolioAssets)) {
+      return [];
+    }
     return portfolioAssets
       .map((asset) => ({
         name: asset.name,
-        value: asset.amount * (livePrices[asset.coinId]?.usd ?? 0),
+        value: asset.amount * (livePrices?.[asset.coinId]?.usd ?? 0),
         color: asset.color,
       }))
       .filter((item) => item.value > 0);

@@ -30,10 +30,15 @@ const LIST_HEIGHT = 400;
  * @param {object}  props.data   - Shared item data: { assets, prices, onDelete }
  */
 function Row({ index, style, data }) {
+  // Safety guards for undefined/null data
+  if (!data || !Array.isArray(data.assets) || !data.assets[index]) {
+    return <div style={style} className="flex items-center px-4 py-3 bg-gray-800 border-b border-gray-700">—</div>;
+  }
+
   const asset = data.assets[index];
 
   // livePrices[coinId] is { usd: number, usd_24h_change: number }
-  const priceData = data.prices?.[asset.coinId] ?? {};
+  const priceData = data?.prices?.[asset.coinId] ?? {};
   const currentPrice = typeof priceData.usd === 'number' ? priceData.usd : 0;
 
   const totalValue = asset.amount * currentPrice;
@@ -131,9 +136,12 @@ const AssetTable = React.memo(function AssetTable({ onDeleteAsset }) {
 
   // Sort by current USD value descending so highest-value positions come first.
   const sortedAssets = useMemo(() => {
+    if (!Array.isArray(portfolioAssets)) {
+      return [];
+    }
     return [...portfolioAssets].sort((a, b) => {
-      const priceA = livePrices[a.coinId]?.usd ?? 0;
-      const priceB = livePrices[b.coinId]?.usd ?? 0;
+      const priceA = livePrices?.[a.coinId]?.usd ?? 0;
+      const priceB = livePrices?.[b.coinId]?.usd ?? 0;
       const valueA = a.amount * priceA;
       const valueB = b.amount * priceB;
       return valueB - valueA;

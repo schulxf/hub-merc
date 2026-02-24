@@ -123,7 +123,8 @@ const KpiCards = React.memo(function KpiCards() {
     let invested = 0;
     let total24hAgo = 0;
 
-    for (const asset of portfolioAssets) {
+    const assets = Array.isArray(portfolioAssets) ? portfolioAssets : [];
+    for (const asset of assets) {
       const priceData = livePrices[asset.coinId] ?? {};
       const currentPrice = typeof priceData.usd === 'number' ? priceData.usd : 0;
       const raw24hChange =
