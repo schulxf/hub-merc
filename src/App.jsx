@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { auth } from './lib/firebase';
+import { queryClient } from './lib/queryClient';
 import { Loader2 } from 'lucide-react';
 
-// Importação dos seus componentes principais
+// Importação dos componentes
 import DashboardLayout from './components/layout/DashboardLayout';
 import Auth from './pages/Auth';
+import { GlobalErrorBoundary } from './components/ui/ErrorBoundary';
 
-export default function App() {
+function AppContent() {
   const [user, setUser] = useState(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
@@ -39,4 +42,14 @@ export default function App() {
 
   // Se houver utilizador, mostra o Dashboard completo da Mercurius
   return <DashboardLayout />;
+}
+
+export default function App() {
+  return (
+    <GlobalErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AppContent />
+      </QueryClientProvider>
+    </GlobalErrorBoundary>
+  );
 }

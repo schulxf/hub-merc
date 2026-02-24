@@ -1,62 +1,33 @@
-import { useEffect, useState } from 'react';
-import { fetchWalletBalances } from '../lib/web3Api';
-
 /**
- * Hook responsável por orquestrar a leitura de saldos on-chain
- * a partir das carteiras registadas em users/{uid}/wallets.
- *
- * O fetch só é disparado quando o parâmetro `trigger` muda
- * (ex: timestamp gerado num clique de botão).
+ * Hook para buscar saldos on-chain via TanStack Query.
+ * Dispara fetch apenas quando o parâmetro `trigger` muda
+ * (timestamp de um clique no botão "Sync on-chain").
  */
+import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { fetchWalletsData, walletsKeys } from '../services/walletsService';
+
 export function useWalletBalances(wallets, trigger) {
-  const [tokens, setTokens] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [warning, setWarning] = useState(null);
+  // Validação de entrada
+  const hasWallets = wallets && wallets.length > 0;
+  const walletsKey = useMemo(() => JSON.stringify(wallets || []), [wallets]);
 
-  useEffect(() => {
-    if (!trigger) {
-      return;
-    }
+  const { data = {}, isLoading, error } = useQuery({
+    queryKey: walletsKeys.byTrigger(trigger || 'no-trigger'),
+    queryFn: () => fetchWalletsData(wallets),
+    enabled: hasWallets && !!trigger, // só executa se houver wallets E um trigger
+    retry: 2,
+    staleTime: 5 * 60 * 1000, // 5 min
+  });
 
-    if (!wallets || wallets.length === 0) {
-      setWarning('Adicione pelo menos uma carteira para puxar dados on-chain.');
-      return;
-    }
+  const tokens = data.tokens || [];
+  const warning = data.warning || (hasWallets ? null : 'Adicione pelo menos uma carteira para puxar dados on-chain.');
 
-    let cancelled = false;
-
-    const run = async () => {
-      setIsLoading(true);
-      setError(null);
-      setWarning(null);
-
-      try {
-        const result = await fetchWalletBalances(wallets);
-        if (cancelled) return;
-
-        setTokens(result.tokens || []);
-        if (result.warning) {
-          setWarning(result.warning);
-        }
-      } catch (err) {
-        if (cancelled) return;
-        console.error('Erro ao buscar saldos on-chain:', err);
-        setError('Não foi possível atualizar os saldos on-chain neste momento.');
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [trigger, JSON.stringify(wallets || [])]);
-
-  return { tokens, isLoading, error, warning };
+  return {
+    tokens,
+    isLoading: isLoading && trigger, // só "loading" se realmente está buscando
+    error: error?.message || null,
+    warning,
+  };
 }
 

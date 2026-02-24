@@ -1,45 +1,25 @@
-// src/hooks/useCryptoPrices.js
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+/**
+ * Hook para buscar preços de criptos via TanStack Query.
+ * Usa CoinGecko com cache de 5 min + auto-refetch a cada 60s.
+ */
+import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { fetchCoinPrices, pricesKeys } from '../services/pricesService';
 
 export function useCryptoPrices(coinIds) {
-  const [prices, setPrices] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  // Deduplicar e ordenar IDs para cache consistente
+  const uniqueSortedIds = useMemo(
+    () => (coinIds ? [...new Set(coinIds)].sort() : []),
+    [coinIds]
+  );
 
-  const idsString = useMemo(() => [...new Set(coinIds)].join(','), [coinIds]);
+  const { data: prices = {}, isLoading, error } = useQuery({
+    queryKey: pricesKeys.byIds(uniqueSortedIds),
+    queryFn: () => fetchCoinPrices(uniqueSortedIds),
+    enabled: uniqueSortedIds.length > 0,
+    refetchInterval: 60 * 1000, // auto-refetch a cada 60s
+    staleTime: 5 * 60 * 1000,  // 5 min (redundante, já definido em queryClient)
+  });
 
-  useEffect(() => {
-    if (!idsString) return;
-    const abortController = new AbortController();
-
-    const fetchPrices = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${idsString}&vs_currencies=usd&include_24hr_change=true`,
-          { signal: abortController.signal }
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        setPrices(data);
-      } catch (e) {
-        if (e.name !== 'AbortError') {
-          setError(e.message);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPrices();
-    const interval = setInterval(fetchPrices, 60000);
-
-    return () => {
-      clearInterval(interval);
-      abortController.abort();
-    };
-  }, [idsString]);
-
-  return { prices, isLoading, error };
+  return { prices, isLoading, error: error?.message || null };
 }
