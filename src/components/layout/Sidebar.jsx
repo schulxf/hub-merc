@@ -65,9 +65,9 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
           <div key={category.id} className="space-y-1">
             {category.items ? (
               <>
-                <button 
-                  onClick={() => toggleMenu(category.id)} 
-                  className="w-full flex items-center justify-between px-3 py-2 text-gray-400 hover:text-white transition-colors outline-none focus:ring-2 focus:ring-blue-500 select-none "
+                <button
+                  onClick={() => toggleMenu(category.id)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-gray-400 hover:text-white transition-colors outline-none focus:ring-2 focus:ring-blue-500 select-none"
                 >
                   <div className="flex items-center gap-3">
                     <category.icon className="w-4 h-4" />
@@ -88,7 +88,7 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
                         <button
                           key={item.id}
                           onClick={() => navigateTo(item.id)}
-                          className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-r-lg transition-all font-medium text-sm outline-none focus:ring-2 focus:ring-blue-500 select-none  ${
+                          className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-r-lg transition-all font-medium text-sm outline-none focus:ring-2 focus:ring-blue-500 select-none ${
                             isActive ? 'bg-[#181C25] text-white border-y border-r border-gray-700/50 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-[#11141A]'
                           }`}
                         >
@@ -106,7 +106,7 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
             ) : (
               <button
                 onClick={() => navigateTo(category.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all font-bold text-xs uppercase tracking-wider outline-none focus:ring-2 focus:ring-blue-500 select-none  ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all font-bold text-xs uppercase tracking-wider outline-none focus:ring-2 focus:ring-blue-500 select-none ${
                   currentRoute === category.id ? 'bg-[#181C25] text-white border border-gray-700/50 shadow-sm' : 'text-gray-400 hover:text-white hover:bg-[#11141A]'
                 }`}
               >
@@ -127,9 +127,9 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
           <p className="text-[10px] font-bold text-purple-500/70 uppercase tracking-widest mb-3">Gestão</p>
           <button
             onClick={() => navigateTo('admin')}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 select-none  ${
-              currentRoute === 'admin' 
-                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-sm' 
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 select-none ${
+              currentRoute === 'admin'
+                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-sm'
                 : 'text-purple-500/70 hover:text-purple-400 hover:bg-purple-500/10'
             }`}
           >
@@ -144,7 +144,7 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
     <div className="mt-auto pt-6 border-t border-gray-800/80 space-y-2">
       <button
         onClick={() => navigateTo('carteiras-pro')}
-        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors outline-none ${
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors outline-none focus:ring-2 focus:ring-blue-500 select-none ${
           currentRoute === 'carteiras-pro'
             ? 'bg-[#181C25] border border-gray-700/50'
             : 'hover:bg-[#11141A]'
@@ -170,7 +170,7 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
       </button>
       <button
         onClick={onLogout}
-        className="w-full flex items-center gap-3 px-3 py-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors outline-none"
+        className="w-full flex items-center gap-3 px-3 py-2 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors outline-none focus:ring-2 focus:ring-blue-500 select-none"
         title="Terminar Sessão"
       >
         <LogOut className="w-4 h-4" />

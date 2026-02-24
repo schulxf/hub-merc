@@ -40,8 +40,9 @@ export default function Portfolio() {
   const coinIds = useMemo(() => portfolioAssets.map(a => a.coinId), [portfolioAssets]);
   const { prices: livePrices } = useCryptoPrices(coinIds);
 
-  // Estados do Modal de Adicionar Ativo
+  // Estados do Modal de Adicionar/Editar Ativo
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditingAsset, setIsEditingAsset] = useState(null); // null or asset.id for edit mode
   const [selectedCoin, setSelectedCoin] = useState('bitcoin');
   const [amount, setAmount] = useState('');
   const [buyPrice, setBuyPrice] = useState('');
@@ -80,18 +81,18 @@ export default function Portfolio() {
 
   // Preços agora são geridos pelo hook useCryptoPrices (auto-refresh 60s)
 
-  // 3. GRAVAR NOVO ATIVO NO FIREBASE
+  // 3. GRAVAR NOVO ATIVO OU EDITAR ATIVO EXISTENTE NO FIREBASE
   const handleAddAsset = async (e) => {
     e.preventDefault();
     if (!auth.currentUser || !amount || !buyPrice) return;
-    
+
     setIsSaving(true);
     const coin = SUPPORTED_COINS.find(c => c.id === selectedCoin);
-    
+
     try {
       const assetRef = doc(db, 'users', auth.currentUser.uid, 'portfolio', selectedCoin);
-      
-      // Salva ou atualiza a moeda no banco de dados da Google
+
+      // Salva ou atualiza a moeda no banco de dados
       await setDoc(assetRef, {
         coinId: selectedCoin,
         symbol: coin.symbol,
@@ -103,14 +104,34 @@ export default function Portfolio() {
       });
 
       setIsModalOpen(false);
+      setIsEditingAsset(null);
       setAmount('');
       setBuyPrice('');
+      setSelectedCoin('bitcoin');
     } catch (error) {
       console.error("Erro ao guardar ativo:", error);
       alert("Erro ao guardar ativo. Tente novamente.");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Abrir modal para editar ativo existente
+  const handleEditAsset = (asset) => {
+    setSelectedCoin(asset.coinId);
+    setAmount(asset.amount.toString());
+    setBuyPrice(asset.averageBuyPrice.toString());
+    setIsEditingAsset(asset.id);
+    setIsModalOpen(true);
+  };
+
+  // Cancelar edição
+  const handleCancelModal = () => {
+    setIsModalOpen(false);
+    setIsEditingAsset(null);
+    setAmount('');
+    setBuyPrice('');
+    setSelectedCoin('bitcoin');
   };
 
   // 4. APAGAR ATIVO DO FIREBASE
@@ -326,7 +347,7 @@ export default function Portfolio() {
               </p>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
             <button
               type="button"
               onClick={() => {
@@ -339,7 +360,7 @@ export default function Portfolio() {
                 setLocalSyncWarning('');
                 setSyncTrigger(Date.now().toString());
               }}
-              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-3 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 "
+              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 select-none"
             >
               {isSyncingOnChain ? (
                 <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
@@ -349,27 +370,33 @@ export default function Portfolio() {
               <span>Sync on-chain</span>
             </button>
             <button
-              onClick={() => setIsModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20 outline-none focus:ring-2 focus:ring-blue-500 "
+              onClick={() => {
+                setIsEditingAsset(null);
+                setSelectedCoin('bitcoin');
+                setAmount('');
+                setBuyPrice('');
+                setIsModalOpen(true);
+              }}
+              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20 outline-none focus:ring-2 focus:ring-blue-500 select-none"
             >
               <Plus className="w-4 h-4" /> Adicionar transação
             </button>
             <button
               type="button"
-              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-3 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 "
+              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 select-none"
             >
               Export
             </button>
             <button
               type="button"
               onClick={() => setShowCharts((prev) => !prev)}
-              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-3 py-2 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 "
+              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 select-none"
             >
               {showCharts ? 'Ocultar gráficos' : 'Mostrar gráficos'}
             </button>
             <button
               type="button"
-              className="bg-[#111] hover:bg-[#181818] text-gray-400 p-2 rounded-xl transition-colors border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500  flex items-center justify-center"
+              className="bg-[#111] hover:bg-[#181818] text-gray-400 px-3 py-2.5 rounded-xl transition-colors border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 select-none flex items-center justify-center"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>
@@ -754,18 +781,15 @@ export default function Portfolio() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
-                            onClick={() => {
-                              setSelectedCoin(asset.coinId);
-                              setIsModalOpen(true);
-                            }}
-                            className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-colors outline-none focus:ring-2 focus:ring-blue-500 "
-                            title="Adicionar transação"
+                            onClick={() => handleEditAsset(asset)}
+                            className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-colors outline-none focus:ring-2 focus:ring-blue-500 select-none"
+                            title="Editar ativo"
                           >
                             <Plus className="w-3 h-3" />
                           </button>
                           <button
                             onClick={() => handleRemoveAsset(asset.id)}
-                            className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors outline-none focus:ring-2 focus:ring-blue-500 "
+                            className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors outline-none focus:ring-2 focus:ring-blue-500 select-none"
                             title="Remover ativo"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -857,11 +881,11 @@ export default function Portfolio() {
         )}
       </section>
 
-      {/* MODAL ADICIONAR ATIVO */}
+      {/* MODAL ADICIONAR/EDITAR ATIVO */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-[#151515] border border-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <h2 className="text-2xl font-bold text-white mb-6">Adicionar Transação</h2>
+            <h2 className="text-2xl font-bold text-white mb-6">{isEditingAsset ? 'Editar Ativo' : 'Adicionar Transação'}</h2>
             
             <form onSubmit={handleAddAsset} className="space-y-4">
               <div>
@@ -909,17 +933,17 @@ export default function Portfolio() {
               </div>
 
               <div className="flex gap-3 mt-8 pt-4 border-t border-gray-800">
-                <button 
+                <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-300 hover:bg-gray-800 transition-colors outline-none focus:ring-2 focus:ring-blue-500 "
+                  onClick={handleCancelModal}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-300 hover:bg-gray-800 transition-colors outline-none focus:ring-2 focus:ring-blue-500 select-none"
                 >
                   Cancelar
                 </button>
-                <button 
+                <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 outline-none focus:ring-2 focus:ring-blue-500 "
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 outline-none focus:ring-2 focus:ring-blue-500 select-none"
                 >
                   {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Gravar Ativo'}
                 </button>
