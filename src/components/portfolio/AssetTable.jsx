@@ -117,14 +117,16 @@ function Row({ index, style, data }) {
  * Assets are sorted by current USD value (descending) so the most significant
  * positions appear at the top.
  *
- * The delete handler logs the asset ID; full integration with Firestore delete
- * will be wired up in Portfolio.jsx during Task 8.
- *
  * Must be rendered inside a <PortfolioProvider> tree.
  *
+ * @param {object}   props
+ * @param {Function} [props.onDeleteAsset] - Called with coinId (string) when
+ *                                           the user requests deletion of an asset.
+ *                                           Delegated to the parent so this component
+ *                                           stays free of Firestore dependencies.
  * @returns {React.ReactElement}
  */
-const AssetTable = React.memo(function AssetTable() {
+const AssetTable = React.memo(function AssetTable({ onDeleteAsset }) {
   const { portfolioAssets, livePrices } = usePortfolioContext();
 
   // Sort by current USD value descending so highest-value positions come first.
@@ -139,13 +141,16 @@ const AssetTable = React.memo(function AssetTable() {
   }, [portfolioAssets, livePrices]);
 
   /**
-   * Delete handler placeholder.
-   * Task 8 will replace this with the actual Firestore delete call
-   * passed down from Portfolio.jsx.
+   * Stable delete callback forwarded to each Row via itemData.
+   * Delegates to the parent-supplied onDeleteAsset so this component stays
+   * free of Firestore dependencies and remains easily testable.
    */
-  const handleDeleteAsset = useCallback((assetId) => {
-    console.log('[AssetTable] Delete asset:', assetId);
-  }, []);
+  const handleDeleteAsset = useCallback(
+    (assetId) => {
+      onDeleteAsset?.(assetId);
+    },
+    [onDeleteAsset],
+  );
 
   // Stable itemData object passed to every Row via react-window.
   // Keeping this outside JSX prevents row re-renders when the parent re-renders.

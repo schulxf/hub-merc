@@ -7,16 +7,17 @@ import { auth, db } from '../../lib/firebase';
 import { signOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useUserProfile } from '../../hooks/useUserProfile';
-import AirdropHub from '../../pages/AirdropHub';
-import AirdropRouter from '../../pages/AirdropDetail';
-import Portfolio from '../../pages/Portfolio';
-import Wallets from '../../pages/Wallets';
-import DeFiPositions from '../../pages/DeFiPositions';
+// Importações normais para páginas leves
 import RemindersPage from '../../pages/Reminders';
-import DeFiToolsLanding from '../../pages/DeFiToolsLanding';
 
 // Lazy imports para páginas pesadas (reduz bundle inicial)
 const AdminPanel = lazy(() => import('../../pages/AdminPanel'));
+const AirdropHub = lazy(() => import('../../pages/AirdropHub'));
+const AirdropRouter = lazy(() => import('../../pages/AirdropDetail'));
+const Portfolio = lazy(() => import('../../pages/Portfolio'));
+const Wallets = lazy(() => import('../../pages/Wallets'));
+const DeFiPositions = lazy(() => import('../../pages/DeFiPositions'));
+const DeFiToolsLanding = lazy(() => import('../../pages/DeFiToolsLanding'));
 
 // Fallback de loading para Suspense
 const PageLoader = () => (

@@ -121,6 +121,15 @@ function PortfolioContent() {
     setIsModalOpen(true);
   }, []);
 
+  /**
+   * Placeholder refresh handler — stabilised with useCallback so the reference
+   * is identical across renders and PortfolioHeader (React.memo) is not forced
+   * to re-render unnecessarily.
+   */
+  const handleRefresh = useCallback(() => {
+    // Future: trigger a manual price refresh via useCryptoPrices
+  }, []);
+
   const handleAddOnChainToken = async (token) => {
     if (!auth.currentUser) return;
     setIsLookingUp(token.id);
@@ -192,7 +201,7 @@ function PortfolioContent() {
         {/* HEADER COM AÇÕES */}
         <PortfolioHeader
           onAddAsset={handleAddAssetClick}
-          onRefresh={() => {}}
+          onRefresh={handleRefresh}
         />
 
         {/* AVISO SE HOUVER */}
@@ -217,7 +226,7 @@ function PortfolioContent() {
         </div>
 
         {/* TABELA VIRTUALIZED */}
-        <AssetTable />
+        <AssetTable onDeleteAsset={handleRemoveAsset} />
 
         {/* SECÇÃO ON-CHAIN TOKENS */}
         {onChainTokens && onChainTokens.length > 0 && (
