@@ -15,18 +15,18 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'admin'
-        || request.auth.token.role == 'admin'
-      );
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'admin';
     }
 
     function isAssessor() {
-      return isSignedIn() && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'assessor'
-        || request.auth.token.role == 'assessor'
-      );
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'assessor';
     }
+
+    // TODO: In Phase 8+, consider adding Cloud Function to sync custom claims
+    // when tier changes in Firestore. This would allow checking request.auth.token.role
+    // for faster JWT-level access control without Firestore reads.
 
     /// Check if the current user is an authorised assessor for a given client.
     /// Reads the client's user document and checks the assessorIds array.
