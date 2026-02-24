@@ -40,11 +40,16 @@ export function PortfolioProvider({ children }) {
 
   // Derive coin IDs from portfolio for price fetching
   const coinIds = useMemo(
-    () => portfolioAssets.map((asset) => asset.coinId),
+    () => {
+      if (!Array.isArray(portfolioAssets)) {
+        return [];
+      }
+      return portfolioAssets.map((asset) => asset.coinId);
+    },
     [portfolioAssets],
   );
 
-  const { prices: livePrices } = useCryptoPrices(coinIds);
+  const { prices: livePrices = {} } = useCryptoPrices(coinIds) || {};
 
   // Subscribe to Firestore portfolio collection in real-time
   useEffect(() => {
