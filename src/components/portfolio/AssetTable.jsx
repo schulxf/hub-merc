@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
-import { FixedSizeList as List } from 'react-window';
+import { List } from 'react-window';
 import { Trash2 } from 'lucide-react';
 import { usePortfolioContext } from './PortfolioContext';
 import { fmt } from '../../lib/utils';
