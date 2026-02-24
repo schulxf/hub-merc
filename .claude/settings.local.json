@@ -19,7 +19,9 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Skill(web-design-reviewer)",
-      "Skill(web-design-reviewer:*)"
+      "Skill(web-design-reviewer:*)",
+      "Bash(npx vite build)",
+      "Bash(node -e:*)"
     ]
   }
 }
