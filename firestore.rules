@@ -1,7 +1,11 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // -----------------------------------------------------------------------
     // Helper functions
+    // -----------------------------------------------------------------------
+
     function isSignedIn() {
       return request.auth != null;
     }
@@ -11,49 +15,91 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'admin';
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'admin'
+        || request.auth.token.role == 'admin'
+      );
     }
 
     function isAssessor() {
-      return isSignedIn() &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'assessor';
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'assessor'
+        || request.auth.token.role == 'assessor'
+      );
+    }
+
+    /// Check if the current user is an authorised assessor for a given client.
+    /// Reads the client's user document and checks the assessorIds array.
+    function isAssessorForClient(clientUid) {
+      return isAssessor()
+        && exists(/databases/$(database)/documents/users/$(clientUid))
+        && request.auth.uid in get(/databases/$(database)/documents/users/$(clientUid)).data.assessorIds;
     }
 
     function getUserTier() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier;
     }
 
-    // User documents: each user can only read/write their own data
+    // -----------------------------------------------------------------------
+    // User documents
+    // -----------------------------------------------------------------------
+
     match /users/{uid} {
+      // Owner: full read/write access to own document
       allow read, write: if isOwner(uid);
 
-      // Allow admins to read all user documents (for user management)
+      // Admin: can read all user documents and update tiers
       allow read: if isAdmin();
-      allow update: if isAdmin() && request.resource.data.tier in ['free', 'pro', 'vip', 'admin', 'assessor'];
+      allow update: if isAdmin()
+        && request.resource.data.tier in ['free', 'pro', 'vip', 'admin', 'assessor'];
+
+      // Assessor: can read client profile if assigned via assessorIds
+      allow read: if isAssessorForClient(uid);
     }
 
-    // User subcollections: portfolio, defi, wallets, etc.
+    // -----------------------------------------------------------------------
+    // User subcollections: portfolio, defi, wallets, portfolio_snapshots, etc.
+    // -----------------------------------------------------------------------
+
     match /users/{uid}/{document=**} {
+      // Owner: full access to own subcollections
       allow read, write: if isOwner(uid);
-      allow read: if isAssessor() &&
-                     exists(/databases/$(database)/documents/users/$(uid)/profile) &&
-                     get(/databases/$(database)/documents/users/$(uid)/profile).data.assessorIds[request.auth.uid] == true;
+
+      // Admin: read access to all user subcollections
+      allow read: if isAdmin();
+
+      // Assessor: read-only access to assigned client subcollections
+      allow read: if isAssessorForClient(uid);
     }
 
-    // Public content: readable by all authenticated users, writable by admins only
+    // -----------------------------------------------------------------------
+    // Public content (airdrops, announcements)
+    // -----------------------------------------------------------------------
+
     match /public_content/{document=**} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // Settings: global configuration, readable by all, writable by admins only
+    // Airdrops collection (top-level)
+    match /airdrops/{document=**} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // -----------------------------------------------------------------------
+    // Settings: global configuration
+    // -----------------------------------------------------------------------
+
     match /settings/{document=**} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // Deny all other access
+    // -----------------------------------------------------------------------
+    // Deny all other access by default
+    // -----------------------------------------------------------------------
+
     match /{document=**} {
       allow read, write: if false;
     }

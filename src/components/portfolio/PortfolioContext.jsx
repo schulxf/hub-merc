@@ -22,9 +22,13 @@ const PortfolioContext = createContext(null);
  * - Exposes on-chain sync trigger and results via useWalletBalances
  *
  * @param {object} props
- * @param {React.ReactNode} props.children - Child components that consume context
+ * @param {React.ReactNode} props.children   - Child components that consume context
+ * @param {string|null}     [props.clientUid] - Optional UID to view another user's portfolio.
+ *                                              When provided the context operates in read-only mode.
  */
-export function PortfolioProvider({ children }) {
+export function PortfolioProvider({ children, clientUid = null }) {
+  // Use clientUid if provided (assessor viewing client), otherwise the logged-in user.
+  const uid = clientUid || auth.currentUser?.uid;
   const [portfolioAssets, setPortfolioAssets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [syncTrigger, setSyncTrigger] = useState(null);
@@ -51,14 +55,15 @@ export function PortfolioProvider({ children }) {
 
   const { prices: livePrices = {} } = useCryptoPrices(coinIds) || {};
 
-  // Subscribe to Firestore portfolio collection in real-time
+  // Subscribe to Firestore portfolio collection in real-time.
+  // Re-subscribes whenever `uid` changes (e.g. assessor switching between clients).
   useEffect(() => {
-    if (!auth.currentUser) {
+    if (!uid) {
       setIsLoading(false);
       return;
     }
 
-    const portfolioRef = collection(db, 'users', auth.currentUser.uid, 'portfolio');
+    const portfolioRef = collection(db, 'users', uid, 'portfolio');
     const q = query(portfolioRef);
 
     const unsubscribe = onSnapshot(
@@ -78,7 +83,7 @@ export function PortfolioProvider({ children }) {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [uid]);
 
   /**
    * Stable trigger callback — identity is preserved across renders so consumers
@@ -107,6 +112,8 @@ export function PortfolioProvider({ children }) {
       onChainError,
       onChainWarning,
       wallets,
+      /** true when the provider is viewing another user's portfolio (assessor mode) */
+      readOnly: !!clientUid,
     }),
     [
       portfolioAssets,
@@ -118,6 +125,7 @@ export function PortfolioProvider({ children }) {
       onChainError,
       onChainWarning,
       wallets,
+      clientUid,
     ],
   );
 
@@ -145,6 +153,7 @@ export function PortfolioProvider({ children }) {
  *   onChainError: string | null,
  *   onChainWarning: string | null,
  *   wallets: Array<object>,
+ *   readOnly: boolean,
  * }}
  */
 export function usePortfolioContext() {

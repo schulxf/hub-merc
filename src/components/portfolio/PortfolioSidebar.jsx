@@ -16,8 +16,9 @@ import { fmt } from '../../lib/utils';
  * @param {object}   props
  * @param {object}   props.asset          - Enriched asset object (see PortfolioSidebar)
  * @param {Function} props.onDelete       - Called with asset.coinId when the delete button is clicked
+ * @param {boolean}  [props.readOnly]     - When true, hides the delete button
  */
-const AssetItem = React.memo(function AssetItem({ asset, onDelete }) {
+const AssetItem = React.memo(function AssetItem({ asset, onDelete, readOnly }) {
   const handleDelete = useCallback(
     (e) => {
       // Stop propagation so a future click-to-select handler is not triggered
@@ -64,22 +65,24 @@ const AssetItem = React.memo(function AssetItem({ asset, onDelete }) {
         </div>
       </div>
 
-      {/* Delete button — visible on group hover only */}
-      <button
-        type="button"
-        onClick={handleDelete}
-        title={`Remove ${asset.name}`}
-        className="
-          absolute right-3 top-1/2 -translate-y-1/2
-          opacity-0 group-hover:opacity-100
-          p-1.5 rounded-lg
-          text-red-500 hover:text-white hover:bg-red-500
-          transition-all duration-150
-          outline-none focus:opacity-100 focus:ring-2 focus:ring-red-500
-        "
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-      </button>
+      {/* Delete button — visible on group hover only; hidden in read-only mode */}
+      {!readOnly && (
+        <button
+          type="button"
+          onClick={handleDelete}
+          title={`Remove ${asset.name}`}
+          className="
+            absolute right-3 top-1/2 -translate-y-1/2
+            opacity-0 group-hover:opacity-100
+            p-1.5 rounded-lg
+            text-red-500 hover:text-white hover:bg-red-500
+            transition-all duration-150
+            outline-none focus:opacity-100 focus:ring-2 focus:ring-red-500
+          "
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      )}
     </li>
   );
 });
@@ -103,7 +106,7 @@ const AssetItem = React.memo(function AssetItem({ asset, onDelete }) {
  *                                          user confirms deletion of an asset
  */
 const PortfolioSidebar = React.memo(function PortfolioSidebar({ onDeleteAsset }) {
-  const { portfolioAssets, livePrices } = usePortfolioContext();
+  const { portfolioAssets, livePrices, readOnly } = usePortfolioContext();
 
   /**
    * Enrich raw Firestore assets with live price data, then sort by USD value
@@ -170,7 +173,7 @@ const PortfolioSidebar = React.memo(function PortfolioSidebar({ onDeleteAsset })
           </li>
         ) : (
           enrichedAssets.map((asset) => (
-            <AssetItem key={asset.id} asset={asset} onDelete={handleDelete} />
+            <AssetItem key={asset.id} asset={asset} onDelete={handleDelete} readOnly={readOnly} />
           ))
         )}
       </ul>

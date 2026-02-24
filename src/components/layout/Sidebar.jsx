@@ -3,7 +3,7 @@ import {
   ChevronDown, ChevronUp, Briefcase, PieChart,
   Activity, Zap, LayoutGrid,
   ArrowRightLeft, Bell, Layers, GraduationCap, LifeBuoy, LogOut, Lock, Shield,
-  Star, BookOpen
+  Star, BookOpen, Users
 } from 'lucide-react';
 
 export const MENU_CATEGORIES = [
@@ -51,7 +51,7 @@ export const MENU_CATEGORIES = [
   }
 ];
 
-export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggleMenu, userEmail, userTier, onLogout, hasAccess }) => (
+export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggleMenu, userEmail, userTier, authRole, onLogout, hasAccess }) => (
   <>
     <div className="flex items-center justify-center mb-10 mt-2 md:mt-0">
       <img src="https://i.imgur.com/QAqVuyN.png" alt="Mercurius Crypto" className="w-full max-w-[140px] object-contain opacity-90" />
@@ -121,21 +121,38 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
         ))}
       </div>
 
-      {/* NOVO: O BOTÃO DO PAINEL DE ADMINISTRAÇÃO */}
-      {userTier === 'admin' && (
+      {/* SECÇÃO DE GESTÃO — visível para admin e assessor */}
+      {(userTier === 'admin' || authRole === 'assessor') && (
         <div className="mt-6 pt-6 border-t border-gray-800 px-2">
           <p className="text-[10px] font-bold text-purple-500/70 uppercase tracking-widest mb-3">Gestão</p>
+
+          {/* Painel de Consultoria — assessor + admin */}
           <button
-            onClick={() => navigateTo('admin')}
+            onClick={() => navigateTo('assessor')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 select-none ${
-              currentRoute === 'admin'
-                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-sm'
-                : 'text-purple-500/70 hover:text-purple-400 hover:bg-purple-500/10'
+              currentRoute === 'assessor'
+                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-sm'
+                : 'text-blue-500/70 hover:text-blue-400 hover:bg-blue-500/10'
             }`}
           >
-            <Shield className="w-4 h-4" />
-            Painel Admin
+            <Users className="w-4 h-4" />
+            Painel de Consultoria
           </button>
+
+          {/* Painel Admin — somente admin */}
+          {userTier === 'admin' && (
+            <button
+              onClick={() => navigateTo('admin')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 select-none mt-1 ${
+                currentRoute === 'admin'
+                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-sm'
+                  : 'text-purple-500/70 hover:text-purple-400 hover:bg-purple-500/10'
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              Painel Admin
+            </button>
+          )}
         </div>
       )}
 

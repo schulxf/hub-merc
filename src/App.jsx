@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import DashboardLayout from './components/layout/DashboardLayout';
 import Auth from './pages/Auth';
 import { GlobalErrorBoundary } from './components/ui/ErrorBoundary';
+import { PrivacyProvider } from './contexts/PrivacyContext';
 
 function AppContent() {
   const [user, setUser] = useState(null);
@@ -41,7 +42,11 @@ function AppContent() {
   }
 
   // Se houver utilizador, mostra o Dashboard completo da Mercurius
-  return <DashboardLayout />;
+  return (
+    <PrivacyProvider>
+      <DashboardLayout />
+    </PrivacyProvider>
+  );
 }
 
 export default function App() {
