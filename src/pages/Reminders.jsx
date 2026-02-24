@@ -23,8 +23,8 @@ const RemindersPage = () => {
       return;
     }
 
-    const remindersRef = doc(db, 'users', auth.currentUser.uid, 'profile');
-    const unsub = onSnapshot(remindersRef, (snap) => {
+    const userDocRef = doc(db, 'users', auth.currentUser.uid);
+    const unsub = onSnapshot(userDocRef, (snap) => {
       if (snap.exists() && snap.data().trackers) {
         setReminders(snap.data().trackers || []);
       } else {
@@ -59,7 +59,7 @@ const RemindersPage = () => {
     if (!auth.currentUser) return;
 
     try {
-      const userRef = doc(db, 'users', auth.currentUser.uid, 'profile');
+      const userRef = doc(db, 'users', auth.currentUser.uid);
       await updateDoc(userRef, { trackers: updated });
     } catch (error) {
       console.error('Error saving reminders:', error);
