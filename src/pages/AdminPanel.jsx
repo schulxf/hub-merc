@@ -1,5 +1,5 @@
 import React, { useState, lazy, Suspense } from 'react';
-import { Users, Shield, Calendar, FileText, AlertTriangle, Loader2, Book, TrendingUp, Wallet } from 'lucide-react';
+import { Users, Shield, Calendar, FileText, AlertTriangle, Loader2, Book, TrendingUp, Wallet, Lightbulb } from 'lucide-react';
 
 // Lazy-loaded tab components — each tab's code is split into its own chunk
 // so the browser only downloads what the admin actually navigates to.
@@ -10,6 +10,7 @@ const AdminContentTab = lazy(() => import('../components/admin/AdminContentTab')
 const AdminResearchTab = lazy(() => import('../components/admin/AdminResearchTab'));
 const AdminStrategyTab = lazy(() => import('../components/admin/AdminStrategyTab'));
 const AdminModelPortfolioTab = lazy(() => import('../components/admin/AdminModelPortfolioTab'));
+const AdminRecommendationsTab = lazy(() => import('../components/admin/AdminRecommendationsTab'));
 
 const TABS = [
   { id: 'users', label: 'Gestão de Clientes', icon: Users },
@@ -19,6 +20,7 @@ const TABS = [
   { id: 'research', label: 'Pesquisa', icon: Book },
   { id: 'strategies', label: 'Estratégias', icon: TrendingUp },
   { id: 'portfolios', label: 'Portfólios Modelo', icon: Wallet },
+  { id: 'recommendations', label: 'Recomendações', icon: Lightbulb },
 ];
 
 /** Fallback shown while a lazy tab chunk is downloading. */
@@ -33,8 +35,8 @@ function TabLoading() {
 /**
  * AdminPanel — Container page for all admin-only features (CMS Dashboard).
  *
- * Renders 7 tabs for complete platform management:
- * - User Management, Permissions, Calendar, and 4 CMS systems
+ * Renders 8 tabs for complete platform management:
+ * - User Management, Permissions, Calendar, and 5 CMS systems
  *
  * Lazy-loads each tab's component on first visit.
  * Error state is lifted here so every tab can surface errors in one place.
@@ -47,6 +49,7 @@ function TabLoading() {
  *   - AdminResearchTab        — research documents CMS
  *   - AdminStrategyTab        — investment strategies CMS
  *   - AdminModelPortfolioTab  — model portfolio templates CMS
+ *   - AdminRecommendationsTab — assessor recommendations
  */
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState('users');
@@ -103,6 +106,7 @@ export default function AdminPanel() {
         {activeTab === 'research' && <AdminResearchTab onError={handleError} />}
         {activeTab === 'strategies' && <AdminStrategyTab onError={handleError} />}
         {activeTab === 'portfolios' && <AdminModelPortfolioTab onError={handleError} />}
+        {activeTab === 'recommendations' && <AdminRecommendationsTab onError={handleError} />}
       </Suspense>
     </div>
   );
