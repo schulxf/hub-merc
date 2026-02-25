@@ -14,6 +14,7 @@ import ChartArea from '../components/portfolio/ChartArea';
 import ChartAreaEvolution from '../components/portfolio/ChartAreaEvolution';
 import AssetTable from '../components/portfolio/AssetTable';
 import SnapshotStatus from '../components/portfolio/SnapshotStatus';
+import OpportunityBanner from '../components/portfolio/OpportunityBanner';
 
 // ---------------------------------------------------------------------------
 // PortfolioContent — inner component that consumes PortfolioContext
@@ -225,6 +226,9 @@ function PortfolioContent() {
 
         {/* SNAPSHOT STATUS INDICATOR */}
         <SnapshotStatus isCapturing={isCapturingSnapshot} lastCapturedAt={lastCapturedAt} />
+
+        {/* OPPORTUNITY BANNER */}
+        <OpportunityBanner onSwapClick={handleAddAssetClick} />
 
         {/* KPI CARDS */}
         <KpiCards />
