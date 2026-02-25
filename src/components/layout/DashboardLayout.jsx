@@ -7,6 +7,8 @@ import { auth, db } from '../../lib/firebase';
 import { signOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { useUserProfile } from '../../hooks/useUserProfile';
+import { useAuthRole } from '../../hooks/useAuthRole';
+import PrivacyModeToggle from '../auth/PrivacyModeToggle';
 // Importações normais para páginas leves
 import RemindersPage from '../../pages/Reminders';
 
@@ -18,6 +20,7 @@ const Portfolio = lazy(() => import('../../pages/Portfolio'));
 const Wallets = lazy(() => import('../../pages/Wallets'));
 const DeFiPositions = lazy(() => import('../../pages/DeFiPositions'));
 const DeFiToolsLanding = lazy(() => import('../../pages/DeFiToolsLanding'));
+const AssessorDashboard = lazy(() => import('../../pages/AssessorDashboard'));
 
 // Fallback de loading para Suspense
 const PageLoader = () => (
@@ -55,7 +58,8 @@ const DashboardLayout = () => {
 
   // 1. Estados de Permissão Dinâmicos
   const { profile, isLoadingProfile } = useUserProfile();
-  const userTier = profile?.tier || 'free'; 
+  const userTier = profile?.tier || 'free';
+  const { role: authRole } = useAuthRole();
   
   // Guardamos as configurações do Admin Panel aqui
   const [appPermissions, setAppPermissions] = useState({
@@ -99,7 +103,8 @@ const DashboardLayout = () => {
       'defi-positions': 'defi',
       'defi-tools': 'defi',
       'reminders': 'reminders',
-      'carteiras-recomendadas': 'portfolio'
+      'carteiras-recomendadas': 'portfolio',
+      'assessor': 'free'
     };
     return map[currentRoute] || 'free';
   };
@@ -150,13 +155,14 @@ const DashboardLayout = () => {
     <div className="min-h-screen bg-[#07090C] flex flex-col md:flex-row text-gray-200 font-sans selection:bg-blue-500/30">
       
       <aside className="hidden md:flex flex-col w-72 bg-[#0B0D12] border-r border-gray-800/80 sticky top-0 h-screen p-6 z-30">
-        <SidebarContent 
-           currentRoute={currentRoute} 
-           navigateTo={navigateTo} 
-           expandedMenus={expandedMenus} 
-           toggleMenu={toggleMenu} 
+        <SidebarContent
+           currentRoute={currentRoute}
+           navigateTo={navigateTo}
+           expandedMenus={expandedMenus}
+           toggleMenu={toggleMenu}
            userEmail={auth.currentUser?.email}
            userTier={userTier}
+           authRole={authRole}
            hasAccess={hasAccess} // Passamos a função de verificação para a Sidebar
            onLogout={handleLogoutClick}
         />
@@ -169,8 +175,11 @@ const DashboardLayout = () => {
           </button>
           <img src="https://i.imgur.com/QAqVuyN.png" alt="Mercurius" className="h-5" />
         </div>
-        <div className="w-8 h-8 rounded-md bg-[#181C25] border border-gray-700 flex items-center justify-center text-white font-bold text-xs uppercase">
-          {auth.currentUser?.email ? auth.currentUser.email[0] : 'M'}
+        <div className="flex items-center gap-2">
+          <PrivacyModeToggle />
+          <div className="w-8 h-8 rounded-md bg-[#181C25] border border-gray-700 flex items-center justify-center text-white font-bold text-xs uppercase">
+            {auth.currentUser?.email ? auth.currentUser.email[0] : 'M'}
+          </div>
         </div>
       </header>
 
@@ -181,13 +190,14 @@ const DashboardLayout = () => {
             <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-5 right-5 text-gray-500 hover:text-white outline-none">
               <X className="w-6 h-6" />
             </button>
-            <SidebarContent 
-               currentRoute={currentRoute} 
-               navigateTo={navigateTo} 
-               expandedMenus={expandedMenus} 
-               toggleMenu={toggleMenu} 
+            <SidebarContent
+               currentRoute={currentRoute}
+               navigateTo={navigateTo}
+               expandedMenus={expandedMenus}
+               toggleMenu={toggleMenu}
                userEmail={auth.currentUser?.email}
                userTier={userTier}
+               authRole={authRole}
                hasAccess={hasAccess}
                onLogout={handleLogoutClick}
             />
@@ -213,6 +223,7 @@ const DashboardLayout = () => {
               {currentRoute === 'portfolio' && <Portfolio />}
               {currentRoute === 'carteiras-pro' && <Wallets />}
               {currentRoute === 'defi-tools' && <DeFiToolsLanding />}
+              {currentRoute === 'assessor' && <AssessorDashboard />}
 
               {['analises', 'cursos', 'suporte', 'carteiras-recomendadas', 'research'].includes(currentRoute) && (
                 <MockPage title={getRouteTitle(currentRoute)} />

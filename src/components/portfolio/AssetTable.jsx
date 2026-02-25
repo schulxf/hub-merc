@@ -20,7 +20,7 @@ import { fmt } from '../../lib/utils';
  * @returns {React.ReactElement}
  */
 const AssetTable = React.memo(function AssetTable({ onDeleteAsset }) {
-  const { portfolioAssets, livePrices } = usePortfolioContext();
+  const { portfolioAssets, livePrices, readOnly } = usePortfolioContext();
 
   // Sort by current USD value descending so highest-value positions come first.
   const sortedAssets = useMemo(() => {
@@ -55,7 +55,8 @@ const AssetTable = React.memo(function AssetTable({ onDeleteAsset }) {
         <div className="w-24 text-right text-xs font-bold text-gray-400">ATUAL</div>
         <div className="w-32 text-right text-xs font-bold text-gray-400">VALOR USD</div>
         <div className="w-20 text-right text-xs font-bold text-gray-400">RETORNO</div>
-        <div className="w-8" aria-hidden="true" />
+        {/* Spacer for delete button column — hidden in read-only mode */}
+        {!readOnly && <div className="w-8" aria-hidden="true" />}
       </div>
 
       {/* Asset rows */}
@@ -66,6 +67,7 @@ const AssetTable = React.memo(function AssetTable({ onDeleteAsset }) {
             asset={asset}
             currentPrice={livePrices?.[asset.coinId]?.usd ?? 0}
             onDelete={() => onDeleteAsset?.(asset.id)}
+            readOnly={readOnly}
           />
         ))}
       </div>
@@ -74,9 +76,15 @@ const AssetTable = React.memo(function AssetTable({ onDeleteAsset }) {
 });
 
 /**
- * AssetRow — single asset row in the table
+ * AssetRow — single asset row in the table.
+ *
+ * @param {object}   props
+ * @param {object}   props.asset         - Portfolio asset object
+ * @param {number}   props.currentPrice  - Live price in USD
+ * @param {Function} [props.onDelete]    - Called when delete is clicked
+ * @param {boolean}  [props.readOnly]    - When true, hides the delete button
  */
-const AssetRow = React.memo(function AssetRow({ asset, currentPrice, onDelete }) {
+const AssetRow = React.memo(function AssetRow({ asset, currentPrice, onDelete, readOnly }) {
   const totalValue = asset.amount * currentPrice;
   const change =
     asset.buyPrice > 0
@@ -121,16 +129,18 @@ const AssetRow = React.memo(function AssetRow({ asset, currentPrice, onDelete })
         {fmt.sign(change)}{fmt.pct(change)}%
       </div>
 
-      {/* Delete button */}
-      <button
-        type="button"
-        onClick={onDelete}
-        className="w-8 h-8 flex items-center justify-center rounded hover:bg-red-900 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
-        title={`Remover ${asset.name}`}
-        aria-label={`Remover ${asset.name}`}
-      >
-        <Trash2 size={16} />
-      </button>
+      {/* Delete button — hidden in read-only (assessor) mode */}
+      {!readOnly && (
+        <button
+          type="button"
+          onClick={onDelete}
+          className="w-8 h-8 flex items-center justify-center rounded hover:bg-red-900 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
+          title={`Remover ${asset.name}`}
+          aria-label={`Remover ${asset.name}`}
+        >
+          <Trash2 size={16} />
+        </button>
+      )}
     </div>
   );
 });

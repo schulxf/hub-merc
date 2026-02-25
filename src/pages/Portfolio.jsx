@@ -6,12 +6,14 @@ import { SUPPORTED_COINS } from '../data/mockDb';
 import { lookupCoinGeckoId } from '../lib/web3Api';
 
 import { PortfolioProvider, usePortfolioContext } from '../components/portfolio/PortfolioContext';
+import { useFirstLoadSnapshot } from '../hooks/useFirstLoadSnapshot';
 import PortfolioHeader from '../components/portfolio/PortfolioHeader';
 import KpiCards from '../components/portfolio/KpiCards';
 import PortfolioSidebar from '../components/portfolio/PortfolioSidebar';
 import ChartArea from '../components/portfolio/ChartArea';
 import ChartAreaEvolution from '../components/portfolio/ChartAreaEvolution';
 import AssetTable from '../components/portfolio/AssetTable';
+import SnapshotStatus from '../components/portfolio/SnapshotStatus';
 
 // ---------------------------------------------------------------------------
 // PortfolioContent — inner component that consumes PortfolioContext
@@ -29,12 +31,17 @@ import AssetTable from '../components/portfolio/AssetTable';
 function PortfolioContent() {
   const {
     portfolioAssets,
+    livePrices,
     onChainTokens,
     isSyncingOnChain,
     onChainError,
     onChainWarning,
     isLoading,
   } = usePortfolioContext();
+
+  // Capture a daily snapshot on first load if one does not yet exist for today
+  const { isCapturing: isCapturingSnapshot, lastCapturedAt } =
+    useFirstLoadSnapshot(portfolioAssets, livePrices);
 
   // ===== MODAL STATE =====
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -215,6 +222,9 @@ function PortfolioContent() {
             </div>
           </div>
         )}
+
+        {/* SNAPSHOT STATUS INDICATOR */}
+        <SnapshotStatus isCapturing={isCapturingSnapshot} lastCapturedAt={lastCapturedAt} />
 
         {/* KPI CARDS */}
         <KpiCards />
