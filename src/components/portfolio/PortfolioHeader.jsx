@@ -1,9 +1,14 @@
 import React, { useCallback } from 'react';
 import { PieChart, RefreshCw, Plus, Loader2 } from 'lucide-react';
 import { usePortfolioContext } from './PortfolioContext';
+import {
+  DashboardPrimaryButton,
+  DashboardSecondaryButton,
+  DashboardIconButton,
+} from '../ui/DashboardButtons';
 
 /**
- * PortfolioHeader — header for the Portfolio section.
+ * PortfolioHeader — header for the Portfolio section with design system styling.
  *
  * Renders the section title and three action buttons:
  * - Sync: triggers an on-chain wallet balance sync via PortfolioContext
@@ -27,17 +32,20 @@ const PortfolioHeader = React.memo(function PortfolioHeader({ onAddAsset, onRefr
   }, [setSyncTrigger]);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-      {/* Title */}
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 animate-fade-in">
+      {/* Title with Icon */}
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-2xl bg-blue-500/10 border border-blue-500/40 flex items-center justify-center">
-          <PieChart className="w-4 h-4 text-blue-400" />
+        <div className="w-10 h-10 rounded-lg bg-cyan-dim border border-cyan/30 flex items-center justify-center shadow-cyan">
+          <PieChart className="w-5 h-5 text-cyan" />
         </div>
-        <h1 className="text-2xl font-bold text-white">Portfólio</h1>
+        <div>
+          <h1 className="text-3xl font-black text-text-primary">Portfólio</h1>
+          <p className="text-sm text-text-tertiary">Visão consolidada dos seus ativos</p>
+        </div>
 
         {/* Inline loading indicator while syncing (not shown in read-only mode) */}
         {!readOnly && isSyncingOnChain && (
-          <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+          <Loader2 className="w-5 h-5 text-cyan animate-spin ml-4" />
         )}
       </div>
 
@@ -45,43 +53,40 @@ const PortfolioHeader = React.memo(function PortfolioHeader({ onAddAsset, onRefr
       {!readOnly && (
         <div className="flex flex-col xs:flex-row gap-2 items-stretch xs:items-center">
           {/* Sync on-chain */}
-          <button
-            type="button"
+          <DashboardSecondaryButton
             onClick={handleSync}
             disabled={isSyncingOnChain}
-            className="bg-[#111] hover:bg-[#181818] disabled:opacity-50 disabled:cursor-not-allowed text-gray-100 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2 border border-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 select-none"
             title="Sincronizar saldos on-chain"
+            className="flex items-center justify-center gap-2"
           >
             {isSyncingOnChain ? (
-              <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+              <Loader2 className="w-4 h-4 animate-spin text-cyan" />
             ) : (
-              <RefreshCw className="w-4 h-4 text-blue-400" />
+              <RefreshCw className="w-4 h-4" />
             )}
             <span>Sync</span>
-          </button>
+          </DashboardSecondaryButton>
 
-          {/* Add asset */}
-          <button
-            type="button"
+          {/* Add asset - Primary action */}
+          <DashboardPrimaryButton
             onClick={onAddAsset}
             disabled={isSyncingOnChain}
-            className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 outline-none focus:ring-2 focus:ring-blue-500 select-none"
             title="Adicionar novo ativo ao portfólio"
+            className="flex items-center justify-center gap-2"
           >
             <Plus className="w-4 h-4" />
             <span>+ Ativo</span>
-          </button>
+          </DashboardPrimaryButton>
 
-          {/* Refresh prices */}
-          <button
-            type="button"
+          {/* Refresh prices - Icon button */}
+          <DashboardIconButton
             onClick={onRefresh}
             disabled={isSyncingOnChain}
-            className="bg-[#111] hover:bg-[#181818] disabled:opacity-50 disabled:cursor-not-allowed text-gray-400 px-3 py-2.5 rounded-xl transition-colors border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 select-none flex items-center justify-center"
+            variant="secondary"
             title="Atualizar preços manualmente"
           >
-            <Loader2 className="w-4 h-4" />
-          </button>
+            <RefreshCw className="w-4 h-4" />
+          </DashboardIconButton>
         </div>
       )}
     </div>
