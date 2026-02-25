@@ -1,0 +1,396 @@
+/* ═══════════════════════════════════════════════════════════════════
+   🎨 MERCURIUS DESIGN SYSTEM - Global CSS Variables
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─────────────────────────────────────────
+     COLORS - Core Palette
+     ───────────────────────────────────────── */
+  --color-bg: #07090C;                    /* Main background (darkest) */
+  --color-bg-secondary: #0B0D12;          /* Sidebar background */
+  --color-bg-tertiary: #0F1117;           /* Card backgrounds */
+  --color-bg-quaternary: #131620;         /* Elevated cards/hover */
+
+  /* ─────────────────────────────────────────
+     PRIMARY ACCENT - Cyan
+     ───────────────────────────────────────── */
+  --color-cyan: #00FFEF;                  /* Primary accent (bright cyan) */
+  --color-cyan-dim: rgba(0, 255, 239, 0.10);    /* 10% opacity */
+  --color-cyan-glow: rgba(0, 255, 239, 0.18);   /* 18% opacity */
+  --color-cyan-light: rgba(0, 255, 239, 0.3);   /* 30% opacity */
+
+  /* ─────────────────────────────────────────
+     SECONDARY COLORS
+     ───────────────────────────────────────── */
+  --color-blue: #3B82F6;                  /* Blue accent (for buttons, links) */
+  --color-green: #22C55E;                 /* Green (positive, gains) */
+  --color-red: #EF4444;                   /* Red (negative, losses) */
+  --color-purple: #A855F7;                /* Purple (secondary accent) */
+  --color-orange: #F59E0B;                /* Orange (warnings) */
+  --color-teal: #0D9E9E;                  /* Teal (tertiary accent) */
+  --color-yellow: #FBBF24;                /* Yellow (highlights) */
+
+  /* ─────────────────────────────────────────
+     TEXT COLORS
+     ───────────────────────────────────────── */
+  --color-text-primary: #F0F2F5;          /* Main text (light) */
+  --color-text-secondary: rgba(255, 255, 255, 0.48);  /* Secondary text */
+  --color-text-tertiary: rgba(255, 255, 255, 0.24);   /* Muted text */
+  --color-text-muted: rgba(255, 255, 255, 0.12);      /* Very muted */
+
+  /* ─────────────────────────────────────────
+     BORDERS & DIVIDERS
+     ───────────────────────────────────────── */
+  --color-border: rgba(255, 255, 255, 0.07);         /* Subtle borders */
+  --color-border-medium: rgba(255, 255, 255, 0.12);  /* Medium borders */
+  --color-border-strong: rgba(255, 255, 255, 0.20);  /* Stronger borders */
+
+  /* ─────────────────────────────────────────
+     TYPOGRAPHY - Font Families
+     ───────────────────────────────────────── */
+  --font-display: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-ui: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Monaco', 'Courier New', monospace;
+
+  /* ─────────────────────────────────────────
+     TYPOGRAPHY - Font Sizes (with clamp for responsiveness)
+     ───────────────────────────────────────── */
+  --text-xs: clamp(0.65rem, 1vw, 0.75rem);
+  --text-sm: clamp(0.8rem, 1.2vw, 0.875rem);
+  --text-base: clamp(0.9rem, 1.4vw, 1rem);
+  --text-lg: clamp(1.05rem, 1.6vw, 1.125rem);
+  --text-xl: clamp(1.2rem, 1.8vw, 1.25rem);
+  --text-2xl: clamp(1.4rem, 2.2vw, 1.5rem);
+  --text-3xl: clamp(1.6rem, 2.6vw, 1.875rem);
+  --text-4xl: clamp(2rem, 3.2vw, 2.25rem);
+  --text-5xl: clamp(2.4rem, 4vw, 3rem);
+  --text-6xl: clamp(2.8rem, 4.8vw, 3.75rem);
+
+  /* ─────────────────────────────────────────
+     TYPOGRAPHY - Font Weights
+     ───────────────────────────────────────── */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-extrabold: 800;
+  --font-black: 900;
+
+  /* ─────────────────────────────────────────
+     SPACING - Consistent spacing scale
+     ───────────────────────────────────────── */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* ─────────────────────────────────────────
+     BORDER RADIUS - Consistent rounding
+     ───────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* ─────────────────────────────────────────
+     SHADOWS - Depth and elevation
+     ───────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.55);
+  --shadow-cyan: 0 0 20px rgba(0, 255, 239, 0.25);
+  --shadow-blue: 0 0 20px rgba(59, 130, 246, 0.25);
+
+  /* ─────────────────────────────────────────
+     TRANSITIONS & ANIMATIONS
+     ───────────────────────────────────────── */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --easing-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --easing-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --easing-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ─────────────────────────────────────────
+     Z-INDEX SCALE - Layering system
+     ───────────────────────────────────────── */
+  --z-hide: -1;
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-modal: 1000;
+  --z-popover: 1100;
+  --z-tooltip: 1200;
+  --z-notification: 1300;
+
+  /* ─────────────────────────────────────────
+     RESPONSIVE BREAKPOINTS
+     ───────────────────────────────────────── */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   GLOBAL UTILITY CLASSES - Quick Design System Access
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Background utilities */
+.bg-primary { background-color: var(--color-bg); }
+.bg-secondary { background-color: var(--color-bg-secondary); }
+.bg-tertiary { background-color: var(--color-bg-tertiary); }
+.bg-card { background-color: var(--color-bg-tertiary); }
+.bg-cyan-dim { background-color: var(--color-cyan-dim); }
+.bg-cyan-glow { background-color: var(--color-cyan-glow); }
+
+/* Text color utilities */
+.text-primary { color: var(--color-text-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-tertiary { color: var(--color-text-tertiary); }
+.text-cyan { color: var(--color-cyan); }
+.text-blue { color: var(--color-blue); }
+
+/* Border utilities */
+.border-subtle { border-color: var(--color-border); }
+.border-medium { border-color: var(--color-border-medium); }
+.border-strong { border-color: var(--color-border-strong); }
+
+/* Shadow utilities */
+.shadow-subtle { box-shadow: var(--shadow-sm); }
+.shadow-md-glow { box-shadow: var(--shadow-md); }
+.shadow-cyan { box-shadow: var(--shadow-cyan); }
+.shadow-blue { box-shadow: var(--shadow-blue); }
+
+/* Typography utilities */
+.font-display { font-family: var(--font-display); }
+.font-ui { font-family: var(--font-ui); }
+.font-mono { font-family: var(--font-mono); }
+
+/* Transition utilities */
+.transition-fast { transition: all var(--duration-fast) var(--easing-ease-out); }
+.transition-normal { transition: all var(--duration-normal) var(--easing-ease-out); }
+.transition-slow { transition: all var(--duration-slow) var(--easing-ease-out); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   COMPONENT BASE STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Card component base */
+.card {
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  transition: all var(--duration-normal) var(--easing-ease-out);
+}
+
+.card:hover {
+  background-color: var(--color-bg-quaternary);
+  border-color: var(--color-border-medium);
+  box-shadow: var(--shadow-md);
+}
+
+/* Button component base */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-bold);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  transition: all var(--duration-fast) var(--easing-ease-out);
+  cursor: pointer;
+  border: none;
+  outline: none;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background-color: var(--color-cyan);
+  color: var(--color-bg);
+  box-shadow: var(--shadow-cyan);
+}
+
+.btn-primary:hover {
+  background-color: #00e6dd;
+  box-shadow: 0 0 30px rgba(0, 255, 239, 0.4);
+}
+
+.btn-secondary {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-medium);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-bg-quaternary);
+  border-color: var(--color-cyan);
+}
+
+/* Input component base */
+.input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  transition: all var(--duration-fast) var(--easing-ease-out);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-cyan);
+  box-shadow: 0 0 0 2px var(--color-cyan-dim);
+}
+
+.input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ANIMATION KEYFRAMES
+   ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 255, 239, 0.25); }
+  50% { box-shadow: 0 0 40px rgba(0, 255, 239, 0.4); }
+}
+
+/* Animation utilities */
+.animate-fade-in {
+  animation: fadeIn var(--duration-normal) var(--easing-ease-out);
+}
+
+.animate-slide-in-up {
+  animation: slideInUp var(--duration-normal) var(--easing-ease-out);
+}
+
+.animate-slide-in-down {
+  animation: slideInDown var(--duration-normal) var(--easing-ease-out);
+}
+
+.animate-pulse-subtle {
+  animation: pulse 2s var(--duration-normal);
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE TYPOGRAPHY SCALE
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  :root {
+    --text-2xl: 1.3rem;
+    --text-3xl: 1.5rem;
+    --text-4xl: 1.8rem;
+    --text-5xl: 2rem;
+    --text-6xl: 2.2rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SCROLLBAR STYLING - Match design system
+   ═══════════════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-medium);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-cyan);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-color: var(--color-border-medium) var(--color-bg);
+  scrollbar-width: thin;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SELECTION STYLING
+   ═══════════════════════════════════════════════════════════════════ */
+
+::selection {
+  background-color: var(--color-cyan-dim);
+  color: var(--color-cyan);
+}
+
+::-moz-selection {
+  background-color: var(--color-cyan-dim);
+  color: var(--color-cyan);
+}
