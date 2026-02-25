@@ -1,5 +1,5 @@
 import React, { useState, lazy, Suspense } from 'react';
-import { Users, Shield, Calendar, FileText, AlertTriangle, Loader2 } from 'lucide-react';
+import { Users, Shield, Calendar, FileText, AlertTriangle, Loader2, Book, TrendingUp, Wallet } from 'lucide-react';
 
 // Lazy-loaded tab components — each tab's code is split into its own chunk
 // so the browser only downloads what the admin actually navigates to.
@@ -7,12 +7,18 @@ const AdminUsersTab = lazy(() => import('../components/admin/AdminUsersTab'));
 const AdminPermissionsTab = lazy(() => import('../components/admin/AdminPermissionsTab'));
 const AdminAgendaTab = lazy(() => import('../components/admin/AdminAgendaTab'));
 const AdminContentTab = lazy(() => import('../components/admin/AdminContentTab'));
+const AdminResearchTab = lazy(() => import('../components/admin/AdminResearchTab'));
+const AdminStrategyTab = lazy(() => import('../components/admin/AdminStrategyTab'));
+const AdminModelPortfolioTab = lazy(() => import('../components/admin/AdminModelPortfolioTab'));
 
 const TABS = [
   { id: 'users', label: 'Gestão de Clientes', icon: Users },
   { id: 'permissions', label: 'Permissões de Acesso', icon: Shield },
   { id: 'agenda', label: 'Agenda Global', icon: Calendar },
-  { id: 'content', label: 'Conteúdo (Guias)', icon: FileText },
+  { id: 'content', label: 'Airdrops (Guias)', icon: FileText },
+  { id: 'research', label: 'Pesquisa', icon: Book },
+  { id: 'strategies', label: 'Estratégias', icon: TrendingUp },
+  { id: 'portfolios', label: 'Portfólios Modelo', icon: Wallet },
 ];
 
 /** Fallback shown while a lazy tab chunk is downloading. */
@@ -25,16 +31,22 @@ function TabLoading() {
 }
 
 /**
- * AdminPanel — Container page for all admin-only features.
+ * AdminPanel — Container page for all admin-only features (CMS Dashboard).
  *
- * Renders a tab bar and lazy-loads each tab's component on first visit.
+ * Renders 7 tabs for complete platform management:
+ * - User Management, Permissions, Calendar, and 4 CMS systems
+ *
+ * Lazy-loads each tab's component on first visit.
  * Error state is lifted here so every tab can surface errors in one place.
  *
- * Sub-components:
- *   - AdminUsersTab       — user list + tier management
- *   - AdminPermissionsTab — feature flag / access rules
- *   - AdminAgendaTab      — global calendar events
- *   - AdminContentTab     — airdrop CMS (create / edit / delete guides)
+ * Sub-components (all lazy-loaded):
+ *   - AdminUsersTab           — user list + tier management
+ *   - AdminPermissionsTab     — feature flag / access rules
+ *   - AdminAgendaTab          — global calendar events
+ *   - AdminContentTab         — airdrop CMS (guides)
+ *   - AdminResearchTab        — research documents CMS
+ *   - AdminStrategyTab        — investment strategies CMS
+ *   - AdminModelPortfolioTab  — model portfolio templates CMS
  */
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState('users');
@@ -88,6 +100,9 @@ export default function AdminPanel() {
         {activeTab === 'permissions' && <AdminPermissionsTab onError={handleError} />}
         {activeTab === 'agenda' && <AdminAgendaTab onError={handleError} />}
         {activeTab === 'content' && <AdminContentTab onError={handleError} />}
+        {activeTab === 'research' && <AdminResearchTab onError={handleError} />}
+        {activeTab === 'strategies' && <AdminStrategyTab onError={handleError} />}
+        {activeTab === 'portfolios' && <AdminModelPortfolioTab onError={handleError} />}
       </Suspense>
     </div>
   );
