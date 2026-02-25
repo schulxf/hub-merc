@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { Mail, KeyRound, Loader2, AlertCircle, Github, Chrome } from 'lucide-react';
 import { auth, db } from '../lib/firebase';
@@ -7,6 +7,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'fire
 import { doc, setDoc } from 'firebase/firestore';
 
 const Login = () => {
+  const navigate = useNavigate();
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -154,6 +155,13 @@ const Login = () => {
           status: 'active',
         });
       }
+
+      // Redirect to dashboard after successful login/signup
+      setIsSubmitting(false);
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 500);
+      return;
     } catch (err) {
       console.error('Erro de Autenticação:', err);
       if (err.code === 'auth/invalid-credential') {
