@@ -15,8 +15,6 @@ const Login = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
-  const curRef = useRef(null);
-  const curRRef = useRef(null);
 
   useEffect(() => {
     // Canvas mesh background (subtle)
@@ -67,31 +65,6 @@ const Login = () => {
       .fromTo('.oauth-buttons > button', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.1 }, 1.6)
       .fromTo('.form-footer', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 1.9);
 
-    // Custom cursor
-    const cursor = curRef.current;
-    const cursorRing = curRRef.current;
-    let mouseX = 0;
-    let mouseY = 0;
-
-    const onMouseMove = (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-
-      gsap.to(cursor, {
-        left: mouseX,
-        top: mouseY,
-        duration: 0,
-      });
-
-      gsap.to(cursorRing, {
-        left: mouseX,
-        top: mouseY,
-        duration: 0.1,
-      });
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-
     // Button magnetic effect
     const buttons = document.querySelectorAll('.magnetic-btn');
     buttons.forEach((btn) => {
@@ -117,9 +90,19 @@ const Login = () => {
       });
     });
 
-    return () => {
-      window.removeEventListener('mousemove', onMouseMove);
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleAuth = async (e) => {
@@ -190,30 +173,21 @@ const Login = () => {
     <div
       ref={containerRef}
       className="min-h-screen bg-[#07090C] text-white overflow-x-hidden relative flex items-center justify-center p-4"
-      style={{ cursor: 'none' }}
     >
       {/* Canvas Background */}
-      <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" />
+      <canvas
+        ref={canvasRef}
+        className="fixed inset-0 pointer-events-none"
+        style={{ width: '100vw', height: '100vh', display: 'block' }}
+      />
 
-      {/* Grain Overlay */}
-      <svg className="fixed inset-0 pointer-events-none z-[9997]" style={{ opacity: 0.25 }}>
+      {/* Grain Overlay - TEMPORARILY DISABLED TO DEBUG ARTIFACT */}
+      {/* <svg className="fixed inset-0 pointer-events-none z-[9997]" style={{ opacity: 0.25 }}>
         <filter id="noise">
           <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" />
         </filter>
         <rect width="100%" height="100%" filter="url(#noise)" />
-      </svg>
-
-      {/* Custom Cursor */}
-      <div
-        ref={curRef}
-        className="fixed w-1 h-1 bg-cyan-400 rounded-full pointer-events-none z-[9998]"
-        style={{ left: 0, top: 0, transform: 'translate(-50%, -50%)' }}
-      />
-      <div
-        ref={curRRef}
-        className="fixed w-7 h-7 border-2 border-cyan-400 rounded-full pointer-events-none z-[9998]"
-        style={{ left: 0, top: 0, transform: 'translate(-50%, -50%)' }}
-      />
+      </svg> */}
 
       {/* Login Card */}
       <div className="relative z-10 w-full max-w-md">

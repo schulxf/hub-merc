@@ -143,10 +143,10 @@ export const DashboardSecondaryButton = ({
       className={`
         px-4 py-2.5 rounded-lg
         bg-bg-tertiary text-text-primary
-        border border-border-medium
+        border border-white/[0.08]
         font-medium
         transition-normal
-        hover:bg-bg-quaternary hover:border-cyan/50
+        hover:bg-bg-quaternary hover:border-white/[0.15]
         disabled:opacity-50 disabled:cursor-not-allowed
         outline-none focus:ring-2 focus:ring-cyan/50
         ${className}
@@ -235,7 +235,7 @@ export const DashboardIconButton = ({
 
   const variantClasses = {
     primary: 'bg-cyan text-bg hover:bg-cyan shadow-cyan',
-    secondary: 'bg-bg-tertiary text-text-primary border border-border-medium hover:bg-bg-quaternary',
+    secondary: 'bg-bg-tertiary text-text-primary border border-white/[0.08] hover:bg-bg-quaternary hover:border-white/[0.15]',
     ghost: 'bg-transparent text-text-secondary hover:text-text-primary hover:bg-bg-quaternary/50',
   };
 

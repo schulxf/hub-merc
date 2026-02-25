@@ -3,10 +3,16 @@ import {
   ChevronDown, ChevronUp, Briefcase, PieChart,
   Activity, Zap, LayoutGrid,
   ArrowRightLeft, Bell, Layers, GraduationCap, LifeBuoy, LogOut, Lock, Shield,
-  Star, BookOpen, Users, Brain
+  Star, BookOpen, Users, Brain, Home
 } from 'lucide-react';
 
 export const MENU_CATEGORIES = [
+  {
+    id: 'dashboard',
+    label: 'Início',
+    icon: Home,
+    permKey: 'free',
+  },
   {
     id: 'pro',
     label: 'PRO',

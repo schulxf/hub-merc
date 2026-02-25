@@ -1,6 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { Trash2 } from 'lucide-react';
 import { usePortfolioContext } from './PortfolioContext';
+import { DashboardIconButton } from '../ui/DashboardButtons';
 import { fmt } from '../../lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -39,24 +40,51 @@ const AssetTable = React.memo(function AssetTable({ onDeleteAsset }) {
   // Empty state
   if (!sortedAssets.length) {
     return (
-      <div className="bg-gray-800 p-6 rounded-lg text-center text-gray-400">
+      <div
+        className="p-6 text-center animate-fade-in"
+        style={{
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.05)',
+          borderRadius: '16px',
+          color: '#6B7280',
+        }}
+      >
         Nenhum ativo adicionado ao portfólio
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg overflow-hidden">
+    <div
+      className="relative overflow-hidden animate-fade-in"
+      style={{
+        background: 'rgba(255,255,255,0.02)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255,255,255,0.05)',
+        borderRadius: '16px',
+      }}
+    >
+      {/* Gradient accent line on top */}
+      <div
+        className="absolute top-0 left-0 right-0"
+        style={{
+          height: '1px',
+          background: 'linear-gradient(to right, transparent, rgba(0,255,239,0.3), rgba(26,111,212,0.2))',
+          zIndex: 1,
+        }}
+      />
+
       {/* Table header */}
-      <div className="flex items-center px-4 py-3 bg-gray-700 border-b border-gray-600">
-        <div className="flex-1 text-xs font-bold text-gray-400">ATIVO</div>
-        <div className="w-20 text-right text-xs font-bold text-gray-400">BALANCE</div>
-        <div className="w-24 text-right text-xs font-bold text-gray-400">COMPRA</div>
-        <div className="w-24 text-right text-xs font-bold text-gray-400">ATUAL</div>
-        <div className="w-32 text-right text-xs font-bold text-gray-400">VALOR USD</div>
-        <div className="w-20 text-right text-xs font-bold text-gray-400">RETORNO</div>
+      <div className="flex items-center px-6 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+        <div className="flex-1 text-xs font-bold text-text-secondary uppercase tracking-widest">Ativo</div>
+        <div className="w-20 text-right text-xs font-bold text-text-secondary uppercase tracking-widest">Balance</div>
+        <div className="w-24 text-right text-xs font-bold text-text-secondary uppercase tracking-widest">Compra</div>
+        <div className="w-24 text-right text-xs font-bold text-text-secondary uppercase tracking-widest">Atual</div>
+        <div className="w-32 text-right text-xs font-bold text-text-secondary uppercase tracking-widest">Valor USD</div>
+        <div className="w-20 text-right text-xs font-bold text-text-secondary uppercase tracking-widest">Retorno</div>
         {/* Spacer for delete button column — hidden in read-only mode */}
-        {!readOnly && <div className="w-8" aria-hidden="true" />}
+        {!readOnly && <div className="w-10" aria-hidden="true" />}
       </div>
 
       {/* Asset rows */}
@@ -93,36 +121,41 @@ const AssetRow = React.memo(function AssetRow({ asset, currentPrice, onDelete, r
   const isPositive = change >= 0;
 
   return (
-    <div className="flex items-center px-4 py-3 bg-gray-800 border-b border-gray-700 hover:bg-gray-750 group transition-colors">
+    <div
+      className="flex items-center px-6 py-4 transition-colors duration-150 group"
+      style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+    >
       {/* Name + Symbol */}
       <div className="flex-1 text-sm">
-        <div className="text-white font-medium">{asset.name}</div>
-        <div className="text-gray-400 text-xs">{asset.symbol}</div>
+        <div className="text-text-primary font-medium">{asset.name}</div>
+        <div className="text-text-tertiary text-xs">{asset.symbol}</div>
       </div>
 
       {/* Balance */}
-      <div className="w-20 text-right text-sm text-gray-300">
+      <div className="w-20 text-right text-sm text-text-primary">
         {asset.amount.toFixed(6)}
       </div>
 
       {/* Buy Price */}
-      <div className="w-24 text-right text-sm text-gray-300">
+      <div className="w-24 text-right text-sm text-text-primary">
         ${fmt.usd(asset.buyPrice)}
       </div>
 
       {/* Current Price */}
-      <div className="w-24 text-right text-sm text-gray-300">
+      <div className="w-24 text-right text-sm text-text-primary">
         ${fmt.usd(currentPrice)}
       </div>
 
       {/* USD Value */}
-      <div className="w-32 text-right text-sm text-white font-medium">
+      <div className="w-32 text-right text-sm text-text-primary font-semibold">
         ${fmt.usd(totalValue)}
       </div>
 
       {/* Return % */}
       <div
-        className={`w-20 text-right text-sm font-medium ${
+        className={`w-20 text-right text-sm font-semibold ${
           isPositive ? 'text-green-400' : 'text-red-400'
         }`}
       >
@@ -131,15 +164,16 @@ const AssetRow = React.memo(function AssetRow({ asset, currentPrice, onDelete, r
 
       {/* Delete button — hidden in read-only (assessor) mode */}
       {!readOnly && (
-        <button
-          type="button"
-          onClick={onDelete}
-          className="w-8 h-8 flex items-center justify-center rounded hover:bg-red-900 text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
-          title={`Remover ${asset.name}`}
-          aria-label={`Remover ${asset.name}`}
-        >
-          <Trash2 size={16} />
-        </button>
+        <div className="w-10 flex justify-end">
+          <DashboardIconButton
+            onClick={onDelete}
+            variant="ghost"
+            title={`Remover ${asset.name}`}
+            className="opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Trash2 size={16} className="text-red-400" />
+          </DashboardIconButton>
+        </div>
       )}
     </div>
   );

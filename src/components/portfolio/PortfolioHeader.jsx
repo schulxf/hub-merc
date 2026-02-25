@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { PieChart, RefreshCw, Plus, Loader2 } from 'lucide-react';
+import { RefreshCw, Plus, Loader2 } from 'lucide-react';
 import { usePortfolioContext } from './PortfolioContext';
 import {
   DashboardPrimaryButton,
@@ -32,39 +32,23 @@ const PortfolioHeader = React.memo(function PortfolioHeader({ onAddAsset, onRefr
   }, [setSyncTrigger]);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 animate-fade-in">
-      {/* Title with Icon */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-cyan-dim border border-cyan/30 flex items-center justify-center shadow-cyan">
-          <PieChart className="w-5 h-5 text-cyan" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-black text-text-primary">Portfólio</h1>
-          <p className="text-sm text-text-tertiary">Visão consolidada dos seus ativos</p>
-        </div>
-
-        {/* Inline loading indicator while syncing (not shown in read-only mode) */}
-        {!readOnly && isSyncingOnChain && (
-          <Loader2 className="w-5 h-5 text-cyan animate-spin ml-4" />
-        )}
-      </div>
-
+    <>
       {/* Action buttons — hidden in read-only (assessor) mode */}
       {!readOnly && (
-        <div className="flex flex-col xs:flex-row gap-2 items-stretch xs:items-center">
+        <div className="flex items-center justify-end gap-1.5 mb-6 animate-fade-in">
           {/* Sync on-chain */}
           <DashboardSecondaryButton
             onClick={handleSync}
             disabled={isSyncingOnChain}
             title="Sincronizar saldos on-chain"
-            className="flex items-center justify-center gap-2"
+            className="flex items-center justify-center gap-1.5 px-3 py-2"
           >
             {isSyncingOnChain ? (
-              <Loader2 className="w-4 h-4 animate-spin text-cyan" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan" />
             ) : (
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-3.5 h-3.5" />
             )}
-            <span>Sync</span>
+            <span className="text-xs font-medium">Sync</span>
           </DashboardSecondaryButton>
 
           {/* Add asset - Primary action */}
@@ -72,10 +56,10 @@ const PortfolioHeader = React.memo(function PortfolioHeader({ onAddAsset, onRefr
             onClick={onAddAsset}
             disabled={isSyncingOnChain}
             title="Adicionar novo ativo ao portfólio"
-            className="flex items-center justify-center gap-2"
+            className="flex items-center justify-center gap-1.5 px-3 py-2"
           >
-            <Plus className="w-4 h-4" />
-            <span>+ Ativo</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">Ativo</span>
           </DashboardPrimaryButton>
 
           {/* Refresh prices - Icon button */}
@@ -84,12 +68,13 @@ const PortfolioHeader = React.memo(function PortfolioHeader({ onAddAsset, onRefr
             disabled={isSyncingOnChain}
             variant="secondary"
             title="Atualizar preços manualmente"
+            className="w-8 h-8"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-3.5 h-3.5" />
           </DashboardIconButton>
         </div>
       )}
-    </div>
+    </>
   );
 });
 

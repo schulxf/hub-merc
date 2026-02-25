@@ -72,7 +72,7 @@ const AirdropHub = ({ onSelect }) => {
             <div
               key={airdrop.id}
               onClick={() => onSelect(airdrop)}
-              className="bg-[#111] border border-gray-800 hover:border-gray-600 rounded-2xl cursor-pointer transform hover:-translate-y-1 transition-all duration-300 shadow-xl relative overflow-hidden flex flex-col group outline-none focus:ring-2 focus:ring-blue-500 select-none"
+              className="bg-[#0F1117] border border-white/[0.07] hover:border-white/[0.15] rounded-2xl cursor-pointer hover:-translate-y-1 transition-all duration-300 shadow-xl relative overflow-hidden flex flex-col group outline-none focus:ring-2 focus:ring-blue-500 select-none"
             >
               <div className="h-32 w-full bg-[#1A1D24] relative overflow-hidden">
                 {airdrop.imageUrl && (
@@ -82,23 +82,23 @@ const AirdropHub = ({ onSelect }) => {
                       alt={airdrop.name}
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300"
                     />
-                    <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-[#111] to-transparent"></div>
+                    <div className="absolute bottom-0 left-0 w-full h-2/3 bg-gradient-to-t from-[#0F1117] to-transparent"></div>
                   </>
                 )}
-                <span className="absolute top-4 left-4 bg-black/80 px-3 py-1 rounded border border-gray-800 text-[10px] font-bold uppercase text-gray-300">
+                <span className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded border border-white/[0.12] text-[10px] font-bold uppercase text-gray-300">
                   {airdrop.type}
                 </span>
               </div>
               <div className="p-6 relative z-10 flex-1 flex flex-col">
                 <h3 className="text-xl font-extrabold text-white mb-2">{airdrop.name}</h3>
                 <p className="text-sm text-gray-500 mb-6 line-clamp-2">{airdrop.description}</p>
-                <div className="mt-auto flex items-center justify-between border-t border-gray-800/60 pt-4">
+                <div className="mt-auto flex items-center justify-between border-t border-white/[0.06] pt-4">
                   <div className="flex flex-col">
                     <span className="text-[10px] text-gray-500 uppercase">Custo Est.</span>
                     <span className="text-sm font-semibold text-gray-300">{airdrop.cost}</span>
                   </div>
                   <div
-                    className="p-2 rounded-full bg-[#151515] border border-gray-800 transition-colors"
+                    className="p-2 rounded-full bg-white/[0.05] border border-white/[0.07] transition-colors"
                     style={{ color: airdrop.accent }}
                   >
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />

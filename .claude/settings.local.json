@@ -23,7 +23,9 @@
       "Bash(npx vite build)",
       "Bash(node -e:*)",
       "Bash(firebase deploy:*)",
-      "Bash(npx firebase deploy:*)"
+      "Bash(npx firebase deploy:*)",
+      "Bash(curl:*)",
+      "Bash(wc:*)"
     ]
   }
 }

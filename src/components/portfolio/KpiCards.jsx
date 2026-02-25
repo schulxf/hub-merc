@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import gsap from 'gsap';
 import { usePortfolioContext } from './PortfolioContext';
 import { fmt } from '../../lib/utils';
 
@@ -33,59 +34,114 @@ function formatPct(value) {
 
 /**
  * KpiCard — renders one metric tile with an icon, title, primary value and
- * an optional secondary label.
+ * an optional secondary label. Uses design system styling with GSAP hover effects.
  *
  * @param {object}        props
  * @param {React.ReactNode} props.icon         - Lucide icon element
  * @param {string}        props.title          - Card label (e.g. "Valor Total")
  * @param {string}        props.value          - Primary formatted value
  * @param {string}        [props.subLabel]     - Optional secondary line
- * @param {'blue'|'green'|'red'} props.color   - Accent colour variant
+ * @param {'cyan'|'positive'|'negative'} props.variant - Accent variant
  */
-const KpiCard = React.memo(function KpiCard({ icon, title, value, subLabel, color }) {
-  const colorMap = {
-    blue: {
-      iconWrapper: 'bg-blue-500/10 border-blue-500/30',
-      iconText: 'text-blue-400',
-      value: 'text-white',
-      sub: 'text-blue-400',
+const KpiCard = React.memo(function KpiCard({ icon, title, value, subLabel, variant = 'cyan' }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const card = ref.current;
+    if (!card) return;
+
+    // Hover effect: subtle lift + glow
+    card.addEventListener('mouseenter', () => {
+      gsap.to(card, {
+        y: -4,
+        boxShadow: variant === 'positive'
+          ? '0 16px 40px rgba(34, 197, 94, 0.2)'
+          : variant === 'negative'
+          ? '0 16px 40px rgba(239, 68, 68, 0.2)'
+          : '0 16px 40px rgba(0, 255, 239, 0.2)',
+        duration: 0.3,
+      });
+    });
+
+    card.addEventListener('mouseleave', () => {
+      gsap.to(card, {
+        y: 0,
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+        duration: 0.3,
+      });
+    });
+
+    return () => {
+      card.removeEventListener('mouseenter', null);
+      card.removeEventListener('mouseleave', null);
+    };
+  }, [variant]);
+
+  const variantClasses = {
+    cyan: {
+      icon: 'bg-cyan/10 border-cyan/30 text-cyan',
+      value: 'text-cyan',
+      sub: 'text-cyan/70',
     },
-    green: {
-      iconWrapper: 'bg-green-500/10 border-green-500/30',
-      iconText: 'text-green-400',
+    positive: {
+      icon: 'bg-green-500/10 border-green-500/30 text-green-400',
       value: 'text-green-400',
-      sub: 'text-green-400',
+      sub: 'text-green-400/70',
     },
-    red: {
-      iconWrapper: 'bg-red-500/10 border-red-500/30',
-      iconText: 'text-red-400',
+    negative: {
+      icon: 'bg-red-500/10 border-red-500/30 text-red-400',
       value: 'text-red-400',
-      sub: 'text-red-400',
+      sub: 'text-red-400/70',
     },
   };
 
-  const tokens = colorMap[color] ?? colorMap.blue;
+  const tokens = variantClasses[variant] ?? variantClasses.cyan;
 
   return (
-    <div className="bg-[#0f1419] border border-gray-800 rounded-2xl p-5 shadow-xl flex flex-col gap-3">
+    <div
+      ref={ref}
+      className="relative overflow-hidden flex flex-col gap-4 animate-fade-in transition-all duration-300"
+      style={{
+        background: 'rgba(255,255,255,0.02)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: '16px',
+        padding: '24px',
+      }}
+    >
+      {/* Gradient accent line on top */}
+      <div
+        className="absolute top-0 left-0 right-0"
+        style={{
+          height: '1px',
+          background:
+            variant === 'positive'
+              ? 'linear-gradient(to right, transparent, rgba(34,197,94,0.5), transparent)'
+              : variant === 'negative'
+              ? 'linear-gradient(to right, transparent, rgba(239,68,68,0.5), transparent)'
+              : 'linear-gradient(to right, transparent, rgba(0,255,239,0.5), rgba(26,111,212,0.3))',
+        }}
+      />
+
       {/* Header row: icon + title */}
       <div className="flex items-center gap-3">
         <div
-          className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${tokens.iconWrapper}`}
+          className={`w-10 h-10 rounded-lg border flex items-center justify-center shrink-0 ${tokens.icon}`}
         >
-          <span className={tokens.iconText}>{icon}</span>
+          {icon}
         </div>
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider leading-tight">
+        <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest leading-tight">
           {title}
         </p>
       </div>
 
       {/* Primary value */}
-      <p className={`text-2xl font-extrabold leading-none ${tokens.value}`}>{value}</p>
+      <p className={`text-3xl font-black leading-none ${tokens.value}`}>{value}</p>
 
       {/* Optional secondary label */}
       {subLabel !== undefined && (
-        <p className={`text-xs font-semibold ${tokens.sub}`}>{subLabel}</p>
+        <p className={`text-xs font-medium ${tokens.sub}`}>{subLabel}</p>
       )}
     </div>
   );
@@ -164,42 +220,42 @@ const KpiCards = React.memo(function KpiCards() {
   const yieldPositive = yieldPct >= 0;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* Card 1 — Total Portfolio Value */}
       <KpiCard
-        icon={<DollarSign className="w-4 h-4" />}
+        icon={<DollarSign className="w-5 h-5" />}
         title="Valor Total"
         value={formatUsd(totalValue)}
-        color="blue"
+        variant="cyan"
       />
 
       {/* Card 2 — 24h Change */}
       <KpiCard
         icon={
           change24hPositive ? (
-            <TrendingUp className="w-4 h-4" />
+            <TrendingUp className="w-5 h-5" />
           ) : (
-            <TrendingDown className="w-4 h-4" />
+            <TrendingDown className="w-5 h-5" />
           )
         }
         title="Variação 24h"
         value={formatPct(change24hPct)}
-        color={change24hPositive ? 'green' : 'red'}
+        variant={change24hPositive ? 'positive' : 'negative'}
       />
 
       {/* Card 3 — Yield / ROI */}
       <KpiCard
         icon={
           yieldPositive ? (
-            <TrendingUp className="w-4 h-4" />
+            <TrendingUp className="w-5 h-5" />
           ) : (
-            <TrendingDown className="w-4 h-4" />
+            <TrendingDown className="w-5 h-5" />
           )
         }
         title="Rendimento (ROI)"
         value={formatPct(yieldPct)}
         subLabel="vs. preço médio de compra"
-        color={yieldPositive ? 'green' : 'red'}
+        variant={yieldPositive ? 'positive' : 'negative'}
       />
     </div>
   );

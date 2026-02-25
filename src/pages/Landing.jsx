@@ -6,8 +6,6 @@ import { ArrowRight, BarChart3, Shield, Zap, Brain, Lock, Rocket } from 'lucide-
 const Landing = () => {
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
-  const curRef = useRef(null);
-  const curRRef = useRef(null);
 
   useEffect(() => {
     // Canvas mesh background
@@ -58,31 +56,6 @@ const Landing = () => {
       .fromTo('.feature-card', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.08 }, 1.2)
       .fromTo('.stat-item', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.4, stagger: 0.1 }, 1.6);
 
-    // Custom cursor
-    const cursor = curRef.current;
-    const cursorRing = curRRef.current;
-    let mouseX = 0;
-    let mouseY = 0;
-
-    const onMouseMove = (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-
-      gsap.to(cursor, {
-        left: mouseX,
-        top: mouseY,
-        duration: 0,
-      });
-
-      gsap.to(cursorRing, {
-        left: mouseX,
-        top: mouseY,
-        duration: 0.1,
-      });
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-
     // Button magnetic effect
     const buttons = document.querySelectorAll('.magnetic-btn');
     buttons.forEach((btn) => {
@@ -108,9 +81,19 @@ const Landing = () => {
       });
     });
 
-    return () => {
-      window.removeEventListener('mousemove', onMouseMove);
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const features = [
@@ -169,41 +152,21 @@ const Landing = () => {
     <div
       ref={containerRef}
       className="min-h-screen bg-[#07090C] text-white overflow-x-hidden relative"
-      style={{ cursor: 'none' }}
     >
       {/* Canvas Background */}
       <canvas
         ref={canvasRef}
         className="fixed inset-0 pointer-events-none"
+        style={{ width: '100vw', height: '100vh', display: 'block' }}
       />
 
-      {/* Grain Overlay */}
-      <svg className="fixed inset-0 pointer-events-none z-[9997]" style={{ opacity: 0.25 }}>
+      {/* Grain Overlay - TEMPORARILY DISABLED TO DEBUG ARTIFACT */}
+      {/* <svg className="fixed inset-0 pointer-events-none z-[9997]" style={{ opacity: 0.25 }}>
         <filter id="noise">
           <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" />
         </filter>
         <rect width="100%" height="100%" filter="url(#noise)" />
-      </svg>
-
-      {/* Custom Cursor */}
-      <div
-        ref={curRef}
-        className="fixed w-1 h-1 bg-cyan-400 rounded-full pointer-events-none z-[9998]"
-        style={{
-          left: 0,
-          top: 0,
-          transform: 'translate(-50%, -50%)',
-        }}
-      />
-      <div
-        ref={curRRef}
-        className="fixed w-7 h-7 border-2 border-cyan-400 rounded-full pointer-events-none z-[9998]"
-        style={{
-          left: 0,
-          top: 0,
-          transform: 'translate(-50%, -50%)',
-        }}
-      />
+      </svg> */}
 
       {/* Hero Section */}
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-20">

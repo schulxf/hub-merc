@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { QueryClientProvider } from '@tanstack/react-query';
-import gsap from 'gsap';
 import { auth } from './lib/firebase';
 import { queryClient } from './lib/queryClient';
 import { Loader2 } from 'lucide-react';
@@ -66,42 +65,12 @@ function AppContent() {
 }
 
 export default function App() {
-  const curRef = useRef(null);
-  const curRRef = useRef(null);
-
-  useEffect(() => {
-    // 🎨 Global Custom Cursor
-    const cursor = curRef.current;
-    const cursorRing = curRRef.current;
-    let mouseX = 0;
-    let mouseY = 0;
-
-    const onMouseMove = (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-
-      gsap.to(cursor, {
-        left: mouseX,
-        top: mouseY,
-        duration: 0,
-      });
-
-      gsap.to(cursorRing, {
-        left: mouseX,
-        top: mouseY,
-        duration: 0.1,
-      });
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-    return () => window.removeEventListener('mousemove', onMouseMove);
-  }, []);
-
   return (
     <>
       <style>{`
-        html {
-          cursor: none;
+        /* 🎨 Cyan custom cursor */
+        html, body, * {
+          cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="%2300FFEF" opacity="0.9"/><circle cx="12" cy="12" r="7" fill="none" stroke="%2300FFEF" stroke-width="1" opacity="0.5"/></svg>') 12 12, auto;
         }
       `}</style>
 
@@ -112,28 +81,6 @@ export default function App() {
           </Router>
         </QueryClientProvider>
       </GlobalErrorBoundary>
-
-      {/* 🎯 Custom Cursor Dot */}
-      <div
-        ref={curRef}
-        className="fixed w-1 h-1 bg-cyan rounded-full pointer-events-none z-[9998]"
-        style={{
-          left: 0,
-          top: 0,
-          transform: 'translate(-50%, -50%)',
-        }}
-      />
-
-      {/* 🎯 Custom Cursor Ring */}
-      <div
-        ref={curRRef}
-        className="fixed w-7 h-7 border-2 border-cyan rounded-full pointer-events-none z-[9998]"
-        style={{
-          left: 0,
-          top: 0,
-          transform: 'translate(-50%, -50%)',
-        }}
-      />
     </>
   );
 }
