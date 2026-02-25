@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — Mercurius</title>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <style>
+    :root {
+      --bg:         #07090C;
+      --sidebar-bg: #0B0D12;
+      --card-bg:    #0F1117;
+      --card-up:    #131620;
+      --border:     rgba(255,255,255,0.07);
+      --border-md:  rgba(255,255,255,0.12);
+      --text:       #F0F2F5;
+      --text-sec:   rgba(255,255,255,0.48);
+      --text-muted: rgba(255,255,255,0.24);
+      --cyan:       #00FFEF;
+      --cyan-dim:   rgba(0,255,239,0.10);
+      --cyan-glow:  rgba(0,255,239,0.18);
+      --blue:       #3B82F6;
+      --green:      #22C55E;
+      --red:        #EF4444;
+      --purple:     #A855F7;
+      --orange:     #F59E0B;
+      --teal:       #0D9E9E;
+      --r:          10px;
+      --r-lg:       16px;
+      --font:       'Figtree', sans-serif;
+      --mono:       'JetBrains Mono', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      overflow-x: hidden;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9997;
+      opacity: 0.25;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    }
+
+    /* Custom Cursor */
+    #cur {
+      position: fixed;
+      width: 7px;
+      height: 7px;
+      background: var(--cyan);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      mix-blend-mode: screen;
+    }
+
+    #curR {
+      position: fixed;
+      width: 28px;
+      height: 28px;
+      border: 1.5px solid rgba(0, 255, 239, 0.35);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+    }
+
+    body, button, a {
+      cursor: none;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 3px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+    }
+
+    /* Canvas */
+    #meshCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .content {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* Login Card */
+    .login-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 48px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 0 60px rgba(0, 255, 239, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(0, 255, 239, 0.5), transparent);
+      z-index: 10;
+    }
+
+    /* Logo */
+    .login-logo {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .logo-text {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -0.6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .logo-text .cyan {
+      color: var(--cyan);
+    }
+
+    /* Header */
+    .login-header {
+      margin-bottom: 32px;
+      text-align: center;
+    }
+
+    .login-title {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.6px;
+      margin-bottom: 8px;
+    }
+
+    .login-sub {
+      font-size: 13px;
+      color: var(--text-sec);
+    }
+
+    /* Form */
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-family: var(--mono);
+    }
+
+    .form-input {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      padding: 12px 16px;
+      transition: all 0.3s;
+      outline: none;
+    }
+
+    .form-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .form-input:focus {
+      border-color: rgba(0, 255, 239, 0.4);
+      box-shadow: 0 0 0 3px var(--cyan-glow);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .form-input.error {
+      border-color: rgba(239, 68, 68, 0.5);
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+
+    .form-error {
+      font-size: 11px;
+      color: var(--red);
+      margin-top: 4px;
+      font-family: var(--mono);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .form-input.error + .form-error {
+      opacity: 1;
+    }
+
+    /* Remember & Forgot */
+    .form-options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      gap: 12px;
+    }
+
+    .form-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: none;
+    }
+
+    .form-checkbox input {
+      width: 18px;
+      height: 18px;
+      cursor: none;
+      accent-color: var(--cyan);
+    }
+
+    .form-checkbox label {
+      color: var(--text-sec);
+      cursor: none;
+    }
+
+    .form-forgot {
+      color: var(--text-sec);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .form-forgot:hover {
+      color: var(--cyan);
+    }
+
+    /* CTA */
+    .login-cta {
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: var(--r);
+      padding: 13px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: var(--font);
+      transition: all 0.3s;
+      box-shadow: 0 0 28px rgba(59, 130, 246, 0.3);
+      cursor: none;
+      margin-top: 8px;
+    }
+
+    .login-cta:hover {
+      background: #5B9CF8;
+      box-shadow: 0 0 40px rgba(59, 130, 246, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .login-cta:active {
+      transform: translateY(0);
+    }
+
+    /* Divider */
+    .login-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 24px 0;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .login-divider::before,
+    .login-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* OAuth Buttons */
+    .oauth-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .oauth-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 11px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sec);
+      transition: all 0.2s;
+      cursor: none;
+    }
+
+    .oauth-btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--border-md);
+      color: var(--text);
+    }
+
+    /* Footer */
+    .login-footer {
+      text-align: center;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .login-footer .text {
+      color: var(--text-sec);
+      margin-bottom: 8px;
+    }
+
+    .login-footer a {
+      color: var(--cyan);
+      text-decoration: none;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+
+    .login-footer a:hover {
+      opacity: 0.8;
+    }
+
+    /* Links */
+    .login-links {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 12px;
+      font-size: 11px;
+    }
+
+    .login-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .login-links a:hover {
+      color: var(--text-sec);
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .login-card {
+        padding: 36px 24px;
+      }
+
+      .oauth-buttons {
+        grid-template-columns: 1fr;
+      }
+
+      .form-options {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    /* Error Toast */
+    .error-toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: var(--r);
+      padding: 12px 16px;
+      color: var(--red);
+      font-size: 12px;
+      z-index: 10000;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+
+    .error-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+  <!-- Custom Cursor -->
+  <div id="cur"></div>
+  <div id="curR"></div>
+
+  <!-- Canvas Mesh Background -->
+  <canvas id="meshCanvas"></canvas>
+
+  <!-- Content -->
+  <div class="content">
+    <div class="login-card">
+      <!-- Logo -->
+      <div class="login-logo">
+        <div class="logo-text">
+          merc <span class="cyan">defi.</span>
+        </div>
+      </div>
+
+      <!-- Header -->
+      <div class="login-header">
+        <h1 class="login-title">Welcome Back</h1>
+        <p class="login-sub">Sign in to your Mercurius account</p>
+      </div>
+
+      <!-- Form -->
+      <form class="login-form" id="loginForm">
+        <!-- Email -->
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" id="emailInput" placeholder="you@example.com" required>
+          <div class="form-error">Please enter a valid email address</div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="passwordInput" placeholder="••••••••" required>
+          <div class="form-error">Password is required</div>
+        </div>
+
+        <!-- Options -->
+        <div class="form-options">
+          <div class="form-checkbox">
+            <input type="checkbox" id="rememberMe">
+            <label for="rememberMe">Remember me</label>
+          </div>
+          <a href="#" class="form-forgot">Forgot password?</a>
+        </div>
+
+        <!-- CTA -->
+        <button type="submit" class="login-cta">Sign In</button>
+      </form>
+
+      <!-- Divider -->
+      <div class="login-divider">or continue with</div>
+
+      <!-- OAuth -->
+      <div class="oauth-buttons">
+        <button type="button" class="oauth-btn">Google</button>
+        <button type="button" class="oauth-btn">MetaMask</button>
+      </div>
+
+      <!-- Footer -->
+      <div class="login-footer">
+        <div class="text">
+          Don't have an account?
+          <a href="#">Create one</a>
+        </div>
+        <div class="login-links">
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Support</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Toast -->
+  <div class="error-toast" id="errorToast"></div>
+
+  <script>
+    // ====== CUSTOM CURSOR ======
+    const dot = document.getElementById('cur');
+    const ring = document.getElementById('curR');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    window.addEventListener('mousemove', e => {
+      mx = e.clientX;
+      my = e.clientY;
+    });
+
+    gsap.ticker.add(() => {
+      rx += (mx - rx) * 0.11;
+      ry += (my - ry) * 0.11;
+      gsap.set(dot, { x: mx, y: my });
+      gsap.set(ring, { x: rx, y: ry });
+    });
+
+    document.addEventListener('mouseleave', () => {
+      gsap.to([dot, ring], { opacity: 0, duration: 0.2 });
+    });
+
+    document.addEventListener('mouseenter', () => {
+      gsap.to([dot, ring], { opacity: 1, duration: 0.2 });
+    });
+
+    // Expandir ring em elementos interativos
+    document.querySelectorAll('.login-cta, .oauth-btn, .form-forgot, .login-footer a').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        gsap.to(ring, { width: 44, height: 44, duration: 0.2 });
+      });
+      el.addEventListener('mouseleave', () => {
+        gsap.to(ring, { width: 28, height: 28, duration: 0.25 });
+      });
+    });
+
+    // ====== CANVAS MESH BACKGROUND (Sutil para login) ======
+    const canvas = document.getElementById('meshCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const blobs = [
+      { x: 0.8, y: 0.2, color: '#0D9E9E', alpha: 0.04 },
+      { x: 0.2, y: 0.8, color: '#1A6FD4', alpha: 0.03 },
+    ];
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    function draw() {
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      blobs.forEach(b => {
+        const [r, g, bl] = b.color.match(/\w\w/g).map(x => parseInt(x, 16));
+        const R = Math.max(W, H) * 0.6;
+        const grd = ctx.createRadialGradient(b.x * W, b.y * H, 0, b.x * W, b.y * H, R);
+        grd.addColorStop(0, `rgba(${r},${g},${bl},${b.alpha})`);
+        grd.addColorStop(0.5, `rgba(${r},${g},${bl},${b.alpha * 0.2})`);
+        grd.addColorStop(1, 'transparent');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, W, H);
+      });
+    }
+
+    function breathe(blob, dur, tx, ty) {
+      gsap.to(blob, {
+        x: tx,
+        y: ty,
+        duration: dur,
+        ease: 'sine.inOut',
+        onUpdate: draw,
+        onComplete: () => {
+          breathe(
+            blob,
+            dur + (Math.random() - 0.5) * 6,
+            Math.max(0.1, Math.min(0.9, blob.x + (Math.random() - 0.5) * 0.15)),
+            Math.max(0.1, Math.min(0.9, blob.y + (Math.random() - 0.5) * 0.15))
+          );
+        }
+      });
+    }
+
+    resize();
+    draw();
+    window.addEventListener('resize', () => {
+      resize();
+      draw();
+    });
+
+    blobs.forEach((b, i) => breathe(b, 12 + i * 4, b.x, b.y));
+
+    // ====== GSAP ENTRADA TIMELINE ======
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+    tl
+      .from('.login-card', { y: 30, opacity: 0, duration: 0.8 }, 0)
+      .from('.login-logo', { opacity: 0, duration: 0.5 }, 0.2)
+      .from('.login-header', { y: 12, opacity: 0, duration: 0.5 }, 0.35)
+      .from('.form-group', { y: 10, opacity: 0, stagger: 0.1, duration: 0.5 }, 0.6)
+      .from('.form-options', { y: 8, opacity: 0, duration: 0.4 }, 0.9)
+      .from('.login-cta', { y: 8, opacity: 0, duration: 0.4 }, 1.0)
+      .from('.login-divider', { opacity: 0, duration: 0.3 }, 1.1)
+      .from('.oauth-buttons', { y: 8, opacity: 0, duration: 0.4 }, 1.2)
+      .from('.login-footer', { y: 8, opacity: 0, duration: 0.4 }, 1.3);
+
+    // ====== FORM VALIDATION ======
+    const form = document.getElementById('loginForm');
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const errorToast = document.getElementById('errorToast');
+
+    function showError(message) {
+      errorToast.textContent = message;
+      gsap.to(errorToast, { className: 'error-toast show', duration: 0.3 });
+      setTimeout(() => {
+        gsap.to(errorToast, { className: 'error-toast', duration: 0.3 });
+      }, 4000);
+    }
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+
+      let hasError = false;
+
+      // Validate email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailInput.value)) {
+        emailInput.classList.add('error');
+        hasError = true;
+      } else {
+        emailInput.classList.remove('error');
+      }
+
+      // Validate password
+      if (passwordInput.value.length < 6) {
+        passwordInput.classList.add('error');
+        hasError = true;
+      } else {
+        passwordInput.classList.remove('error');
+      }
+
+      if (!hasError) {
+        showError('✓ Demo mode: Sign-in redirects would happen here');
+        // Simulate login
+        gsap.to('.login-cta', { textContent: 'Signing in...', duration: 0.1 });
+        setTimeout(() => {
+          gsap.to('.login-cta', { textContent: 'Sign In', duration: 0.1 });
+          showError('✓ Successfully signed in!');
+        }, 1500);
+      }
+    });
+
+    // Remove error on input
+    emailInput.addEventListener('input', () => emailInput.classList.remove('error'));
+    passwordInput.addEventListener('input', () => passwordInput.classList.remove('error'));
+
+    // Magnetic effect on CTA
+    const cta = document.querySelector('.login-cta');
+    cta.addEventListener('mousemove', e => {
+      const r = cta.getBoundingClientRect();
+      gsap.to(cta, {
+        x: (e.clientX - r.left - r.width / 2) * 0.25,
+        y: (e.clientY - r.top - r.height / 2) * 0.25,
+        duration: 0.4
+      });
+    });
+
+    cta.addEventListener('mouseleave', () => {
+      gsap.to(cta, { x: 0, y: 0, duration: 0.6, ease: 'elastic.out(1, 0.4)' });
+    });
+  </script>
+</body>
+</html>

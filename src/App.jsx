@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { auth } from './lib/firebase';
@@ -7,7 +8,8 @@ import { Loader2 } from 'lucide-react';
 
 // Importação dos componentes
 import DashboardLayout from './components/layout/DashboardLayout';
-import Auth from './pages/Auth';
+import Landing from './pages/Landing';
+import Login from './pages/Login';
 import { GlobalErrorBoundary } from './components/ui/ErrorBoundary';
 import { PrivacyProvider } from './contexts/PrivacyContext';
 
@@ -36,16 +38,29 @@ function AppContent() {
     );
   }
 
-  // O "Guarda-Costas": Se não houver utilizador logado, mostra o ecrã de Auth.
-  if (!user) {
-    return <Auth />;
-  }
-
-  // Se houver utilizador, mostra o Dashboard completo da Mercurius
   return (
-    <PrivacyProvider>
-      <DashboardLayout />
-    </PrivacyProvider>
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+
+      {/* Protected Routes */}
+      {user ? (
+        <Route
+          path="/dashboard/*"
+          element={
+            <PrivacyProvider>
+              <DashboardLayout />
+            </PrivacyProvider>
+          }
+        />
+      ) : (
+        <Route path="/dashboard/*" element={<Navigate to="/login" replace />} />
+      )}
+
+      {/* Redirect to login if accessing dashboard without auth */}
+      <Route path="*" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
@@ -53,7 +68,9 @@ export default function App() {
   return (
     <GlobalErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AppContent />
+        <Router>
+          <AppContent />
+        </Router>
       </QueryClientProvider>
     </GlobalErrorBoundary>
   );

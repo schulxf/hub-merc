@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mercurius Hub — Complete Platform Architecture</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+      background: #f5f7fa;
+      color: #2d3748;
+      line-height: 1.6;
+    }
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 3rem;
+      text-align: center;
+    }
+    header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    header p { font-size: 1.1rem; opacity: 0.9; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+    .section {
+      background: white;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    section h2 {
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+      color: #667eea;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 0.5rem;
+    }
+    section h3 {
+      font-size: 1.3rem;
+      margin-top: 1.5rem;
+      margin-bottom: 1rem;
+      color: #764ba2;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; }
+    .card {
+      background: #f7fafc;
+      border-left: 4px solid #667eea;
+      padding: 1.5rem;
+      border-radius: 4px;
+    }
+    .card h4 { margin-bottom: 0.5rem; color: #764ba2; }
+    .card p { font-size: 0.9rem; color: #4a5568; }
+    ul, ol { margin-left: 2rem; }
+    li { margin-bottom: 0.5rem; }
+    svg { max-width: 100%; height: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    th {
+      background: #667eea;
+      color: white;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+    }
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    tr:hover { background: #f7fafc; }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .badge-tech { background: #c3dafe; color: #2d3748; }
+    .badge-feature { background: #c6f6d5; color: #22543d; }
+    .badge-complete { background: #c6f6d5; color: #22543d; }
+    .badge-in-progress { background: #fed7d7; color: #742a2a; }
+    @media (max-width: 768px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      header h1 { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🚀 Mercurius Hub</h1>
+    <p>Advanced DeFi Portfolio Management Platform — Complete Architecture Overview</p>
+  </header>
+
+  <div class="container">
+    <!-- BUSINESS CONTEXT -->
+    <section class="section">
+      <h2>📋 Business Context</h2>
+      <p style="margin-bottom: 1.5rem;">
+        <strong>Mercurius Hub</strong> is an advanced cryptocurrency portfolio management and DeFi interaction platform designed for sophisticated investors and traders. It provides comprehensive tools for portfolio tracking, opportunity discovery, on-chain asset management, and AI-powered analysis.
+      </p>
+
+      <h3>Core Value Propositions</h3>
+      <div class="grid-3">
+        <div class="card">
+          <h4>📊 Portfolio Intelligence</h4>
+          <p>Real-time portfolio tracking, performance analytics, and on-chain asset discovery via Moralis and CoinGecko integration.</p>
+        </div>
+        <div class="card">
+          <h4>🔄 DeFi Trading</h4>
+          <p>One-click DEX aggregation via 1inch, Uniswap integration, and real-time swap execution with MetaMask signing.</p>
+        </div>
+        <div class="card">
+          <h4>🤖 AI Assistant</h4>
+          <p>Portfolio analysis and recommendations powered by OpenAI GPT-4, providing intelligent insights and rebalancing suggestions.</p>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 2rem;">User Tiers & Access Control</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Tier</th>
+            <th>Features</th>
+            <th>Use Case</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Free</strong></td>
+            <td>Airdrop guides, Reminders, Basic portfolio tracking</td>
+            <td>Casual investors exploring opportunities</td>
+          </tr>
+          <tr>
+            <td><strong>Pro</strong></td>
+            <td>Full portfolio, DeFi tools, on-chain import, AI Copilot</td>
+            <td>Active traders and portfolio managers</td>
+          </tr>
+          <tr>
+            <td><strong>Assessor</strong></td>
+            <td>Client dashboard, God-mode analytics, reporting, privacy mode</td>
+            <td>Professional investment advisors & consultants</td>
+          </tr>
+        </table>
+    </section>
+
+    <!-- SYSTEM ARCHITECTURE -->
+    <section class="section">
+      <h2>🏗️ System Architecture</h2>
+
+      <h3>Layered Architecture Model</h3>
+      <svg viewBox="0 0 1000 500" style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 4px;">
+        <!-- Layer headers -->
+        <text x="50" y="30" font-size="14" font-weight="bold" fill="#667eea">Presentation Layer</text>
+        <text x="50" y="110" font-size="14" font-weight="bold" fill="#667eea">State Management</text>
+        <text x="50" y="190" font-size="14" font-weight="bold" fill="#667eea">Services Layer</text>
+        <text x="50" y="300" font-size="14" font-weight="bold" fill="#667eea">Data Layer</text>
+        <text x="50" y="450" font-size="14" font-weight="bold" fill="#667eea">External APIs</text>
+
+        <!-- Presentation Layer -->
+        <rect x="100" y="40" width="150" height="50" fill="#4299e1" rx="4"/>
+        <text x="175" y="70" text-anchor="middle" fill="white" font-weight="600">React Components</text>
+
+        <rect x="280" y="40" width="150" height="50" fill="#4299e1" rx="4"/>
+        <text x="355" y="70" text-anchor="middle" fill="white" font-weight="600">Tailwind CSS</text>
+
+        <rect x="460" y="40" width="150" height="50" fill="#4299e1" rx="4"/>
+        <text x="535" y="70" text-anchor="middle" fill="white" font-weight="600">Pages & Layouts</text>
+
+        <rect x="640" y="40" width="150" height="50" fill="#4299e1" rx="4"/>
+        <text x="715" y="70" text-anchor="middle" fill="white" font-weight="600">Error Boundaries</text>
+
+        <!-- State Management -->
+        <rect x="100" y="120" width="150" height="50" fill="#ed8936" rx="4"/>
+        <text x="175" y="150" text-anchor="middle" fill="white" font-weight="600">TanStack Query</text>
+
+        <rect x="280" y="120" width="150" height="50" fill="#ed8936" rx="4"/>
+        <text x="355" y="150" text-anchor="middle" fill="white" font-weight="600">Context API</text>
+
+        <rect x="460" y="120" width="150" height="50" fill="#ed8936" rx="4"/>
+        <text x="535" y="150" text-anchor="middle" fill="white" font-weight="600">useReducer Hooks</text>
+
+        <rect x="640" y="120" width="150" height="50" fill="#ed8936" rx="4"/>
+        <text x="715" y="150" text-anchor="middle" fill="white" font-weight="600">Zod Validation</text>
+
+        <!-- Services Layer -->
+        <rect x="100" y="200" width="140" height="50" fill="#9f7aea" rx="4"/>
+        <text x="170" y="230" text-anchor="middle" fill="white" font-weight="600">web3Api.js</text>
+
+        <rect x="260" y="200" width="140" height="50" fill="#9f7aea" rx="4"/>
+        <text x="330" y="230" text-anchor="middle" fill="white" font-weight="600">aiService.js</text>
+
+        <rect x="420" y="200" width="140" height="50" fill="#9f7aea" rx="4"/>
+        <text x="490" y="230" text-anchor="middle" fill="white" font-weight="600">swapService.js</text>
+
+        <rect x="580" y="200" width="140" height="50" fill="#9f7aea" rx="4"/>
+        <text x="650" y="230" text-anchor="middle" fill="white" font-weight="600">opportunityAnalyzer.js</text>
+
+        <rect x="740" y="200" width="140" height="50" fill="#9f7aea" rx="4"/>
+        <text x="810" y="230" text-anchor="middle" fill="white" font-weight="600">portfolioSnapshots.js</text>
+
+        <!-- Data Layer -->
+        <rect x="100" y="310" width="120" height="50" fill="#48bb78" rx="4"/>
+        <text x="160" y="340" text-anchor="middle" fill="white" font-weight="600">Firebase Auth</text>
+
+        <rect x="240" y="310" width="120" height="50" fill="#48bb78" rx="4"/>
+        <text x="300" y="340" text-anchor="middle" fill="white" font-weight="600">Firestore DB</text>
+
+        <rect x="380" y="310" width="120" height="50" fill="#48bb78" rx="4"/>
+        <text x="440" y="340" text-anchor="middle" fill="white" font-weight="600">Firebase Storage</text>
+
+        <rect x="520" y="310" width="120" height="50" fill="#48bb78" rx="4"/>
+        <text x="580" y="340" text-anchor="middle" fill="white" font-weight="600">Cloudinary CDN</text>
+
+        <rect x="660" y="310" width="120" height="50" fill="#48bb78" rx="4"/>
+        <text x="720" y="340" text-anchor="middle" fill="white" font-weight="600">Local Cache</text>
+
+        <!-- External APIs -->
+        <rect x="100" y="410" width="110" height="50" fill="#e53e3e" rx="4"/>
+        <text x="155" y="440" text-anchor="middle" fill="white" font-weight="600">1inch API</text>
+
+        <rect x="230" y="410" width="110" height="50" fill="#e53e3e" rx="4"/>
+        <text x="285" y="440" text-anchor="middle" fill="white" font-weight="600">Moralis SDK</text>
+
+        <rect x="360" y="410" width="110" height="50" fill="#e53e3e" rx="4"/>
+        <text x="415" y="440" text-anchor="middle" fill="white" font-weight="600">CoinGecko API</text>
+
+        <rect x="490" y="410" width="110" height="50" fill="#e53e3e" rx="4"/>
+        <text x="545" y="440" text-anchor="middle" fill="white" font-weight="600">OpenAI API</text>
+
+        <rect x="620" y="410" width="110" height="50" fill="#e53e3e" rx="4"/>
+        <text x="675" y="440" text-anchor="middle" fill="white" font-weight="600">MetaMask RPC</text>
+
+        <!-- Arrows connecting layers -->
+        <path d="M 350 90 L 350 120" stroke="#999" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <path d="M 350 170 L 350 200" stroke="#999" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <path d="M 350 250 L 350 310" stroke="#999" stroke-width="2" marker-end="url(#arrowhead)"/>
+        <path d="M 350 360 L 350 410" stroke="#999" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+            <polygon points="0 0, 10 5, 0 10" fill="#999"/>
+          </marker>
+        </defs>
+      </svg>
+
+      <h3 style="margin-top: 2rem;">Core Modules</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>🔐 Authentication Module</h4>
+          <ul>
+            <li>Firebase Auth (email/password, OAuth)</li>
+            <li>Custom claims for admin flags</li>
+            <li>Session management</li>
+            <li>Tier-based access control</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>💼 Portfolio Module</h4>
+          <ul>
+            <li>Asset tracking (manual + on-chain)</li>
+            <li>Daily snapshots for history</li>
+            <li>Performance calculations</li>
+            <li>Rebalancing opportunities</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>🔄 DeFi Module</h4>
+          <ul>
+            <li>1inch DEX aggregation</li>
+            <li>Uniswap V3 integration</li>
+            <li>Liquidity pool management</li>
+            <li>Swap execution & tracking</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>🤖 AI Module</h4>
+          <ul>
+            <li>GPT-4 portfolio analysis</li>
+            <li>Streaming chat responses</li>
+            <li>Recommendation generation</li>
+            <li>Context serialization</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>📚 Content Module</h4>
+          <ul>
+            <li>Airdrop CMS (create/edit/delete)</li>
+            <li>Image upload to Cloudinary</li>
+            <li>Phase/task builder</li>
+            <li>Real-time updates</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>👨‍💼 Assessor Module</h4>
+          <ul>
+            <li>Client dashboard</li>
+            <li>God-mode analytics</li>
+            <li>Privacy mode toggle</li>
+            <li>Report generation (planned)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- DATA FLOW -->
+    <section class="section">
+      <h2>🔄 Data Flow Architecture</h2>
+      <svg viewBox="0 0 1000 400" style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 4px;">
+        <!-- User Input -->
+        <circle cx="50" cy="200" r="40" fill="#667eea"/>
+        <text x="50" y="205" text-anchor="middle" fill="white" font-weight="600" font-size="12">User</text>
+
+        <!-- Firebase Auth -->
+        <rect x="150" y="160" width="120" height="80" fill="#4299e1" rx="4"/>
+        <text x="210" y="205" text-anchor="middle" fill="white" font-weight="600">Firebase Auth</text>
+
+        <!-- Firestore -->
+        <rect x="350" y="160" width="120" height="80" fill="#48bb78" rx="4"/>
+        <text x="410" y="205" text-anchor="middle" fill="white" font-weight="600">Firestore DB</text>
+
+        <!-- Services -->
+        <rect x="550" y="80" width="120" height="60" fill="#9f7aea" rx="4"/>
+        <text x="610" y="115" text-anchor="middle" fill="white" font-weight="600" font-size="11">Services</text>
+
+        <rect x="550" y="160" width="120" height="60" fill="#9f7aea" rx="4"/>
+        <text x="610" y="195" text-anchor="middle" fill="white" font-weight="600" font-size="11">Hooks</text>
+
+        <rect x="550" y="240" width="120" height="60" fill="#9f7aea" rx="4"/>
+        <text x="610" y="275" text-anchor="middle" fill="white" font-weight="600" font-size="11">State</text>
+
+        <!-- External APIs -->
+        <rect x="750" y="80" width="100" height="50" fill="#e53e3e" rx="4"/>
+        <text x="800" y="110" text-anchor="middle" fill="white" font-weight="600" font-size="11">1inch API</text>
+
+        <rect x="750" y="145" width="100" height="50" fill="#e53e3e" rx="4"/>
+        <text x="800" y="175" text-anchor="middle" fill="white" font-weight="600" font-size="11">Moralis</text>
+
+        <rect x="750" y="210" width="100" height="50" fill="#e53e3e" rx="4"/>
+        <text x="800" y="240" text-anchor="middle" fill="white" font-weight="600" font-size="11">CoinGecko</text>
+
+        <rect x="750" y="275" width="100" height="50" fill="#e53e3e" rx="4"/>
+        <text x="800" y="305" text-anchor="middle" fill="white" font-weight="600" font-size="11">OpenAI</text>
+
+        <!-- Components -->
+        <rect x="920" y="160" width="70" height="80" fill="#667eea" rx="4"/>
+        <text x="955" y="205" text-anchor="middle" fill="white" font-weight="600" font-size="11">UI</text>
+
+        <!-- Arrows -->
+        <path d="M 90 200 L 150 200" stroke="#999" stroke-width="2" marker-end="url(#arrow)" stroke-dasharray="5,5"/>
+        <text x="120" y="190" font-size="10" fill="#666">sign in</text>
+
+        <path d="M 270 200 L 350 200" stroke="#999" stroke-width="2" marker-end="url(#arrow)"/>
+        <text x="310" y="190" font-size="10" fill="#666">read/write</text>
+
+        <path d="M 410 160 L 550 130" stroke="#999" stroke-width="2" marker-end="url(#arrow)"/>
+        <text x="460" y="140" font-size="10" fill="#666">fetch data</text>
+
+        <path d="M 410 200 L 550 190" stroke="#999" stroke-width="2" marker-end="url(#arrow)"/>
+        <text x="460" y="180" font-size="10" fill="#666">cache</text>
+
+        <path d="M 410 240 L 550 270" stroke="#999" stroke-width="2" marker-end="url(#arrow)"/>
+        <text x="460" y="260" font-size="10" fill="#666">persist</text>
+
+        <path d="M 670 115 L 750 105" stroke="#999" stroke-width="2" marker-end="url(#arrow)"/>
+        <path d="M 670 180 L 750 170" stroke="#999" stroke-width="2" marker-end="url(#arrow)"/>
+        <path d="M 670 280 L 750 300" stroke="#999" stroke-width="2" marker-end="url(#arrow)"/>
+
+        <path d="M 670 200 L 920 200" stroke="#999" stroke-width="2" marker-end="url(#arrow)"/>
+        <text x="790" y="190" font-size="10" fill="#666">render</text>
+
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+            <polygon points="0 0, 10 5, 0 10" fill="#999"/>
+          </marker>
+        </defs>
+      </svg>
+
+      <h3 style="margin-top: 2rem;">Data Flow Examples</h3>
+      <div class="card">
+        <h4>Portfolio Update Flow</h4>
+        <ol>
+          <li>User adds asset (Portfolio.jsx)</li>
+          <li>Data validated with Zod schema</li>
+          <li>Written to Firestore (users/{uid}/portfolio)</li>
+          <li>usePortfolioContext updates state</li>
+          <li>TanStack Query refetches prices</li>
+          <li>Components re-render with new values</li>
+          <li>Daily snapshot captured (optional)</li>
+        </ol>
+      </div>
+      <div class="card" style="margin-top: 1rem;">
+        <h4>Swap Execution Flow</h4>
+        <ol>
+          <li>User selects tokens and amount (SwapWidget.jsx)</li>
+          <li>useSwapQuote fetches 1inch quote (TanStack Query)</li>
+          <li>Quote cached for 30 seconds</li>
+          <li>User confirms and clicks execute</li>
+          <li>MetaMask opens for transaction signing</li>
+          <li>Signed transaction sent to blockchain</li>
+          <li>User portfolio automatically updated</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- TECHNOLOGY STACK -->
+    <section class="section">
+      <h2>🛠️ Technology Stack</h2>
+      <div class="grid-3">
+        <div>
+          <h3>Frontend</h3>
+          <ul>
+            <li><span class="badge badge-tech">React 19.2</span></li>
+            <li><span class="badge badge-tech">Tailwind CSS 3</span></li>
+            <li><span class="badge badge-tech">TypeScript-ready</span></li>
+            <li><span class="badge badge-tech">Vite (build)</span></li>
+            <li><span class="badge badge-tech">Recharts</span></li>
+            <li><span class="badge badge-tech">Lucide Icons</span></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Backend & Data</h3>
+          <ul>
+            <li><span class="badge badge-tech">Firebase Auth</span></li>
+            <li><span class="badge badge-tech">Firestore</span></li>
+            <li><span class="badge badge-tech">Cloud Storage</span></li>
+            <li><span class="badge badge-tech">Cloud Functions</span></li>
+            <li><span class="badge badge-tech">Realtime Database</span></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Libraries & Tools</h3>
+          <ul>
+            <li><span class="badge badge-tech">TanStack Query</span></li>
+            <li><span class="badge badge-tech">Zod v4</span></li>
+            <li><span class="badge badge-tech">Ethers.js</span></li>
+            <li><span class="badge badge-tech">Jest + RTL</span></li>
+            <li><span class="badge badge-tech">Moralis SDK</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 2rem;">External Integrations</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Purpose</th>
+            <th>Authentication</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1inch</strong></td>
+            <td>DEX aggregation, swap quotes</td>
+            <td>API Key (free tier)</td>
+            <td><span class="badge badge-complete">✓ Testnet</span></td>
+          </tr>
+          <tr>
+            <td><strong>Moralis</strong></td>
+            <td>On-chain wallet balances, token data</td>
+            <td>API Key</td>
+            <td><span class="badge badge-complete">✓ Live</span></td>
+          </tr>
+          <tr>
+            <td><strong>CoinGecko</strong></td>
+            <td>Real-time crypto prices</td>
+            <td>None (free tier)</td>
+            <td><span class="badge badge-complete">✓ Live</span></td>
+          </tr>
+          <tr>
+            <td><strong>OpenAI</strong></td>
+            <td>Portfolio analysis, recommendations</td>
+            <td>API Key (Blaze plan required)</td>
+            <td><span class="badge badge-in-progress">⚙ Cloud Function</span></td>
+          </tr>
+          <tr>
+            <td><strong>Cloudinary</strong></td>
+            <td>Image hosting for airdrops</td>
+            <td>Cloud name, API key</td>
+            <td><span class="badge badge-complete">✓ Live</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- DEPLOYMENT -->
+    <section class="section">
+      <h2>🚀 Deployment Architecture</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h4>MVP Deployment (No Blaze)</h4>
+          <ul>
+            <li>✓ Firebase Hosting</li>
+            <li>✓ Firestore (free tier)</li>
+            <li>✓ Firebase Auth</li>
+            <li>✓ Cloud Storage</li>
+            <li>✗ Cloud Functions</li>
+            <li>AI responses mocked</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Full Deployment (Blaze Plan)</h4>
+          <ul>
+            <li>✓ Firebase Hosting</li>
+            <li>✓ Firestore (scalable)</li>
+            <li>✓ Firebase Auth</li>
+            <li>✓ Cloud Storage</li>
+            <li>✓ Cloud Functions</li>
+            <li>Real OpenAI integration</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 2rem;">Infrastructure as Code</h3>
+      <div class="card">
+        <strong>Environment Configuration:</strong>
+        <pre style="background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 4px; overflow-x: auto; margin-top: 0.5rem;"><code>VITE_FIREBASE_PROJECT_ID=hubmercurius
+VITE_FIREBASE_API_KEY=***
+VITE_FIREBASE_AUTH_DOMAIN=hubmercurius.firebaseapp.com
+VITE_FIREBASE_STORAGE_BUCKET=hubmercurius.appspot.com
+VITE_ONEINCH_API_URL=https://api.1inch.io/v5.0/1
+VITE_MORALIS_API_KEY=***
+VITE_CLOUDINARY_CLOUD_NAME=***</code></pre>
+      </div>
+
+      <h3 style="margin-top: 2rem;">Monitoring & Observability</h3>
+      <ul>
+        <li><strong>Build Metrics:</strong> Vite build status, bundle size tracking, code coverage reports</li>
+        <li><strong>Runtime Monitoring:</strong> Firebase Console logs, error tracking, performance metrics</li>
+        <li><strong>Security:</strong> Firestore Security Rules validation, API key rotation, audit logs</li>
+        <li><strong>Analytics:</strong> User engagement, feature adoption, error rates</li>
+      </ul>
+    </section>
+
+    <!-- FEATURE MATRIX -->
+    <section class="section">
+      <h2>✨ Feature Matrix by Tier</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Free</th>
+            <th>Pro</th>
+            <th>Assessor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Airdrop Guides</strong></td>
+            <td>✓</td>
+            <td>✓</td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td><strong>Reminders Calendar</strong></td>
+            <td>✓</td>
+            <td>✓</td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td><strong>Portfolio Tracking</strong></td>
+            <td></td>
+            <td>✓</td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td><strong>On-Chain Import</strong></td>
+            <td></td>
+            <td>✓</td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td><strong>DeFi Tools (Swap/Calc)</strong></td>
+            <td></td>
+            <td>✓</td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td><strong>AI Copilot</strong></td>
+            <td></td>
+            <td>✓</td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td><strong>Client Dashboard</strong></td>
+            <td></td>
+            <td></td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td><strong>God-Mode Analytics</strong></td>
+            <td></td>
+            <td></td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td><strong>Privacy Mode</strong></td>
+            <td></td>
+            <td></td>
+            <td>✓</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e2e8f0; color: #718096;">
+      <p>Mercurius Hub Architecture — Phases 1-7 Complete | Status: MVP Production Ready | Last Updated: February 2026</p>
+    </footer>
+  </div>
+</body>
+</html>

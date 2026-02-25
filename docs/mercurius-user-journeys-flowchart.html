@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mercurius Hub — Complete User Journey Flowcharts</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #f5f7fa;
+      color: #2d3748;
+    }
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 3rem;
+      text-align: center;
+    }
+    header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+    .section {
+      background: white;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    section h2 {
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+      color: #667eea;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 0.5rem;
+    }
+    section h3 {
+      font-size: 1.3rem;
+      margin: 1.5rem 0 1rem;
+      color: #764ba2;
+    }
+    svg { max-width: 100%; height: auto; background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 4px; }
+    .flowchart-container {
+      margin: 2rem 0;
+      padding: 1rem;
+      background: #f7fafc;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .legend-circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 0.75rem;
+    }
+    .legend-rect {
+      width: 30px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 0.7rem;
+    }
+    .legend-diamond {
+      width: 25px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid #e2e8f0;
+      color: #718096;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔄 User Journey Flowcharts</h1>
+    <p>Complete User Workflows & Decision Trees | All Features</p>
+  </header>
+
+  <div class="container">
+    <!-- LEGEND -->
+    <section class="section">
+      <h2>📌 Flowchart Legend</h2>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-circle" style="background: #48bb78;">●</div>
+          <span>Start / End Point</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-rect" style="background: #4299e1;">▢</div>
+          <span>Process / Action</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-rect" style="background: #f59e0b;">◇</div>
+          <span>Decision Point</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-rect" style="background: #e53e3e;">▢</div>
+          <span>Error / Alert</span>
+        </div>
+        <div class="legend-item">
+          <span>→ YES path</span>
+          <span style="text-decoration: underline; color: #48bb78;">—</span>
+        </div>
+        <div class="legend-item">
+          <span>→ NO path</span>
+          <span style="text-decoration: underline; color: #e53e3e;">—</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- AUTHENTICATION FLOW -->
+    <section class="section">
+      <h2>🔐 1. Authentication Flow</h2>
+      <div class="flowchart-container">
+        <svg viewBox="0 0 800 600" style="width: 100%; max-width: 800px;">
+          <!-- Start -->
+          <circle cx="400" cy="50" r="30" fill="#48bb78"/>
+          <text x="400" y="55" text-anchor="middle" fill="white" font-weight="600">START</text>
+
+          <!-- Arrow down -->
+          <path d="M 400 80 L 400 120" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Visit Site -->
+          <rect x="320" y="120" width="160" height="50" fill="#4299e1" rx="5"/>
+          <text x="400" y="150" text-anchor="middle" fill="white" font-weight="600" font-size="13">Visit Mercurius Hub</text>
+
+          <!-- Arrow down -->
+          <path d="M 400 170 L 400 210" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Decision: Auth? -->
+          <path d="M 400 210 L 480 250 L 400 290 L 320 250 Z" fill="#f59e0b"/>
+          <text x="400" y="250" text-anchor="middle" fill="white" font-weight="600" font-size="11">Authenticated?</text>
+
+          <!-- YES path -->
+          <path d="M 480 250 L 550 250" stroke="#48bb78" stroke-width="2" marker-end="url(#arrow-green)"/>
+          <text x="515" y="240" font-size="11" fill="#48bb78" font-weight="600">YES</text>
+
+          <!-- Dashboard -->
+          <rect x="550" y="225" width="150" height="50" fill="#48bb78" rx="5"/>
+          <text x="625" y="255" text-anchor="middle" fill="white" font-weight="600" font-size="13">Go to Dashboard</text>
+
+          <!-- NO path -->
+          <path d="M 320 250 L 200 250" stroke="#e53e3e" stroke-width="2" marker-end="url(#arrow-red)"/>
+          <text x="260" y="240" font-size="11" fill="#e53e3e" font-weight="600">NO</text>
+
+          <!-- Login/Signup -->
+          <rect x="20" y="225" width="150" height="50" fill="#f59e0b" rx="5"/>
+          <text x="95" y="255" text-anchor="middle" fill="white" font-weight="600" font-size="13">Login/Signup Form</text>
+
+          <!-- Arrow down -->
+          <path d="M 95 275 L 95 310" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- OAuth or Email/Password -->
+          <rect x="20" y="310" width="150" height="50" fill="#4299e1" rx="5"/>
+          <text x="95" y="335" text-anchor="middle" fill="white" font-weight="600" font-size="13">OAuth or Email/Pass</text>
+
+          <!-- Arrow down -->
+          <path d="M 95 360 L 95 400" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Tier Assignment -->
+          <rect x="20" y="400" width="150" height="50" fill="#4299e1" rx="5"/>
+          <text x="95" y="425" text-anchor="middle" fill="white" font-weight="600" font-size="13">Assign Tier (free/pro)</text>
+
+          <!-- Arrow down -->
+          <path d="M 95 450 L 95 490" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Go to Dashboard -->
+          <rect x="20" y="490" width="150" height="50" fill="#48bb78" rx="5"/>
+          <text x="95" y="515" text-anchor="middle" fill="white" font-weight="600" font-size="13">Go to Dashboard</text>
+
+          <!-- Arrow from auth to end -->
+          <path d="M 625 275 L 625 520 L 170 520" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Arrow defs -->
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+              <polygon points="0 0, 10 5, 0 10" fill="#666"/>
+            </marker>
+            <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+              <polygon points="0 0, 10 5, 0 10" fill="#48bb78"/>
+            </marker>
+            <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+              <polygon points="0 0, 10 5, 0 10" fill="#e53e3e"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </section>
+
+    <!-- PORTFOLIO MANAGEMENT FLOW -->
+    <section class="section">
+      <h2>💼 2. Portfolio Management Flow</h2>
+      <p>Users can add assets manually or import from on-chain wallets</p>
+      <div class="flowchart-container">
+        <svg viewBox="0 0 900 700" style="width: 100%; max-width: 900px;">
+          <!-- Start -->
+          <circle cx="450" cy="50" r="30" fill="#48bb78"/>
+          <text x="450" y="55" text-anchor="middle" fill="white" font-weight="600">START</text>
+
+          <!-- Arrow -->
+          <path d="M 450 80 L 450 120" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- View Portfolio -->
+          <rect x="350" y="120" width="200" height="50" fill="#4299e1" rx="5"/>
+          <text x="450" y="150" text-anchor="middle" fill="white" font-weight="600">View Portfolio</text>
+
+          <!-- Arrow -->
+          <path d="M 450 170 L 450 210" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Decision: Add Asset? -->
+          <path d="M 450 210 L 550 270 L 450 330 L 350 270 Z" fill="#f59e0b"/>
+          <text x="450" y="270" text-anchor="middle" fill="white" font-weight="600" font-size="11">Add Asset?</text>
+
+          <!-- Manual Path (YES) -->
+          <path d="M 550 270 L 650 270" stroke="#48bb78" stroke-width="2" marker-end="url(#arrow-green)"/>
+          <text x="600" y="260" font-size="11" fill="#48bb78" font-weight="600">YES</text>
+
+          <!-- Manual Form -->
+          <rect x="650" y="245" width="150" height="50" fill="#4299e1" rx="5"/>
+          <text x="725" y="270" text-anchor="middle" fill="white" font-weight="600" font-size="12">Manual Form</text>
+          <text x="725" y="285" text-anchor="middle" fill="white" font-size="10">(Name/Amount/Price)</text>
+
+          <!-- Arrow -->
+          <path d="M 725 295 L 725 335" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Save to Firestore -->
+          <rect x="650" y="335" width="150" height="50" fill="#4299e1" rx="5"/>
+          <text x="725" y="365" text-anchor="middle" fill="white" font-weight="600">Save to Firestore</text>
+
+          <!-- Arrow -->
+          <path d="M 725 385 L 725 420" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Update Charts -->
+          <rect x="650" y="420" width="150" height="50" fill="#48bb78" rx="5"/>
+          <text x="725" y="445" text-anchor="middle" fill="white" font-weight="600">Update Charts</text>
+
+          <!-- On-Chain Path (NO) -->
+          <path d="M 350 270 L 200 270" stroke="#e53e3e" stroke-width="2" marker-end="url(#arrow-red)"/>
+          <text x="275" y="260" font-size="11" fill="#e53e3e" font-weight="600">NO</text>
+
+          <!-- Decision: On-Chain? -->
+          <path d="M 200 270 L 100 330 L 200 390 L 300 330 Z" fill="#f59e0b"/>
+          <text x="200" y="335" text-anchor="middle" fill="white" font-weight="600" font-size="11">Import</text>
+          <text x="200" y="350" text-anchor="middle" fill="white" font-weight="600" font-size="11">on-chain?</text>
+
+          <!-- Connect Wallet (YES) -->
+          <path d="M 100 330 L 20 330" stroke="#48bb78" stroke-width="2" marker-end="url(#arrow-green)"/>
+          <text x="60" y="320" font-size="11" fill="#48bb78" font-weight="600">YES</text>
+
+          <!-- MetaMask -->
+          <rect x="-80" y="305" width="100" height="50" fill="#4299e1" rx="5"/>
+          <text x="-30" y="335" text-anchor="middle" fill="white" font-weight="600">MetaMask</text>
+
+          <!-- Arrow -->
+          <path d="M -30 355 L -30 395" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Sync Balances -->
+          <rect x="-80" y="395" width="100" height="50" fill="#4299e1" rx="5"/>
+          <text x="-30" y="420" text-anchor="middle" fill="white" font-weight="600" font-size="12">Sync</text>
+          <text x="-30" y="435" text-anchor="middle" fill="white" font-weight="600" font-size="12">Balances</text>
+
+          <!-- Arrow -->
+          <path d="M -30 445 L -30 485" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Auto Import -->
+          <rect x="-80" y="485" width="100" height="50" fill="#48bb78" rx="5"/>
+          <text x="-30" y="515" text-anchor="middle" fill="white" font-weight="600" font-size="11">Auto Import</text>
+
+          <!-- End Path -->
+          <path d="M 725 470 L 725 540 L 450 540 L 450 580" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <path d="M -30 535 L -30 540 L 450 540" stroke="#666" stroke-width="2"/>
+
+          <!-- End -->
+          <circle cx="450" cy="620" r="30" fill="#48bb78"/>
+          <text x="450" y="625" text-anchor="middle" fill="white" font-weight="600">END</text>
+
+          <!-- Arrow defs -->
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+              <polygon points="0 0, 10 5, 0 10" fill="#666"/>
+            </marker>
+            <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+              <polygon points="0 0, 10 5, 0 10" fill="#48bb78"/>
+            </marker>
+            <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+              <polygon points="0 0, 10 5, 0 10" fill="#e53e3e"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </section>
+
+    <!-- SWAP FLOW -->
+    <section class="section">
+      <h2>🔄 3. DeFi Swap Execution Flow</h2>
+      <p>Complete flow from token selection to confirmed transaction</p>
+      <div class="flowchart-container">
+        <svg viewBox="0 0 900 800" style="width: 100%; max-width: 900px;">
+          <!-- Start -->
+          <circle cx="450" cy="50" r="30" fill="#48bb78"/>
+          <text x="450" y="55" text-anchor="middle" fill="white" font-weight="600">START</text>
+
+          <!-- Flow steps -->
+          <path d="M 450 80 L 450 120" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="350" y="120" width="200" height="50" fill="#4299e1" rx="5"/>
+          <text x="450" y="150" text-anchor="middle" fill="white" font-weight="600">Open Swap Widget</text>
+
+          <path d="M 450 170 L 450 210" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="350" y="210" width="200" height="50" fill="#4299e1" rx="5"/>
+          <text x="450" y="235" text-anchor="middle" fill="white" font-weight="600">Select Tokens</text>
+          <text x="450" y="250" text-anchor="middle" fill="white" font-size="10">(tokenIn / tokenOut)</text>
+
+          <path d="M 450 260 L 450 300" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="350" y="300" width="200" height="50" fill="#4299e1" rx="5"/>
+          <text x="450" y="325" text-anchor="middle" fill="white" font-weight="600">Enter Amount & Slippage</text>
+
+          <path d="M 450 350 L 450 390" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="350" y="390" width="200" height="50" fill="#4299e1" rx="5"/>
+          <text x="450" y="415" text-anchor="middle" fill="white" font-weight="600">Fetch 1inch Quote</text>
+
+          <!-- Decision: Quote OK? -->
+          <path d="M 450 440 L 550 500 L 450 560 L 350 500 Z" fill="#f59e0b"/>
+          <text x="450" y="505" text-anchor="middle" fill="white" font-weight="600" font-size="11">Quote Valid?</text>
+
+          <!-- Error Path -->
+          <path d="M 350 500 L 200 500" stroke="#e53e3e" stroke-width="2" marker-end="url(#arrow-red)"/>
+          <text x="275" y="490" font-size="11" fill="#e53e3e" font-weight="600">NO</text>
+
+          <rect x="20" y="475" width="150" height="50" fill="#e53e3e" rx="5"/>
+          <text x="95" y="500" text-anchor="middle" fill="white" font-weight="600">Error Banner</text>
+
+          <path d="M 95 525 L 95 565" stroke="#e53e3e" stroke-width="2" marker-end="url(#arrow-red)"/>
+          <rect x="20" y="565" width="150" height="50" fill="#e53e3e" rx="5"/>
+          <text x="95" y="590" text-anchor="middle" fill="white" font-weight="600">Show Retry Option</text>
+
+          <!-- Success Path -->
+          <path d="M 550 500 L 650 500" stroke="#48bb78" stroke-width="2" marker-end="url(#arrow-green)"/>
+          <text x="600" y="490" font-size="11" fill="#48bb78" font-weight="600">YES</text>
+
+          <rect x="650" y="475" width="150" height="50" fill="#4299e1" rx="5"/>
+          <text x="725" y="495" text-anchor="middle" fill="white" font-weight="600">Display Price</text>
+          <text x="725" y="510" text-anchor="middle" fill="white" font-size="10">& Gas Estimate</text>
+
+          <!-- Continue flow -->
+          <path d="M 725 525 L 725 565" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="650" y="565" width="150" height="50" fill="#4299e1" rx="5"/>
+          <text x="725" y="590" text-anchor="middle" fill="white" font-weight="600">Review & Confirm</text>
+
+          <path d="M 725 615 L 725 655" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="650" y="655" width="150" height="50" fill="#f59e0b" rx="5"/>
+          <text x="725" y="680" text-anchor="middle" fill="white" font-weight="600">MetaMask Signing</text>
+
+          <!-- Decision: Sign OK? -->
+          <path d="M 725 705 L 825 745 L 725 785 L 625 745 Z" fill="#f59e0b"/>
+          <text x="725" y="750" text-anchor="middle" fill="white" font-weight="600" font-size="11">Signed?</text>
+
+          <!-- Success -->
+          <path d="M 825 745 L 800 745 L 800 640 L 450 640" stroke="#48bb78" stroke-width="2" marker-end="url(#arrow-green)"/>
+          <text x="750" y="735" font-size="11" fill="#48bb78" font-weight="600">YES</text>
+
+          <!-- Error -->
+          <path d="M 625 745 L 100 745" stroke="#e53e3e" stroke-width="2" marker-end="url(#arrow-red)"/>
+          <text x="360" y="735" font-size="11" fill="#e53e3e" font-weight="600">NO</text>
+
+          <!-- Main end -->
+          <path d="M 450 640 L 450 720" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="350" y="720" width="200" height="50" fill="#48bb78" rx="5"/>
+          <text x="450" y="745" text-anchor="middle" fill="white" font-weight="600">Transaction Complete</text>
+
+          <!-- Arrow defs -->
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+              <polygon points="0 0, 10 5, 0 10" fill="#666"/>
+            </marker>
+            <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+              <polygon points="0 0, 10 5, 0 10" fill="#48bb78"/>
+            </marker>
+            <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+              <polygon points="0 0, 10 5, 0 10" fill="#e53e3e"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </section>
+
+    <!-- AI COPILOT FLOW -->
+    <section class="section">
+      <h2>🤖 4. AI Copilot Chat Flow</h2>
+      <p>Portfolio analysis with AI-powered recommendations</p>
+      <div class="flowchart-container">
+        <svg viewBox="0 0 800 700" style="width: 100%; max-width: 800px;">
+          <!-- Start -->
+          <circle cx="400" cy="50" r="30" fill="#48bb78"/>
+          <text x="400" y="55" text-anchor="middle" fill="white" font-weight="600">START</text>
+
+          <!-- Open AI -->
+          <path d="M 400 80 L 400 120" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="300" y="120" width="200" height="50" fill="#4299e1" rx="5"/>
+          <text x="400" y="150" text-anchor="middle" fill="white" font-weight="600">Open AI Copilot</text>
+
+          <!-- Load Portfolio -->
+          <path d="M 400 170 L 400 210" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="300" y="210" width="200" height="50" fill="#4299e1" rx="5"/>
+          <text x="400" y="235" text-anchor="middle" fill="white" font-weight="600">Load Portfolio Data</text>
+          <text x="400" y="250" text-anchor="middle" fill="white" font-size="10">(Context)</text>
+
+          <!-- Chat Ready -->
+          <path d="M 400 260 L 400 300" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="300" y="300" width="200" height="50" fill="#48bb78" rx="5"/>
+          <text x="400" y="325" text-anchor="middle" fill="white" font-weight="600">Chat Ready</text>
+
+          <!-- User Types -->
+          <path d="M 400 350 L 400 390" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="300" y="390" width="200" height="50" fill="#4299e1" rx="5"/>
+          <text x="400" y="415" text-anchor="middle" fill="white" font-weight="600">User Types Message</text>
+
+          <!-- Send Message -->
+          <path d="M 400 440 L 400 480" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="300" y="480" width="200" height="50" fill="#4299e1" rx="5"/>
+          <text x="400" y="505" text-anchor="middle" fill="white" font-weight="600">Send to AI Service</text>
+
+          <!-- Display Response -->
+          <path d="M 400 530 L 400 570" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="300" y="570" width="200" height="50" fill="#4299e1" rx="5"/>
+          <text x="400" y="590" text-anchor="middle" fill="white" font-weight="600">Stream Response</text>
+          <text x="400" y="605" text-anchor="middle" fill="white" font-size="10">(Char-by-char animation)</text>
+
+          <!-- Show Suggestions -->
+          <path d="M 400 620 L 400 660" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="300" y="660" width="200" height="50" fill="#48bb78" rx="5"/>
+          <text x="400" y="685" text-anchor="middle" fill="white" font-weight="600">Show Follow-up Suggestions</text>
+
+          <!-- Arrow defs -->
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+              <polygon points="0 0, 10 5, 0 10" fill="#666"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </section>
+
+    <!-- ADMIN FLOW -->
+    <section class="section">
+      <h2>👨‍💼 5. Admin Content Management Flow</h2>
+      <p>Creating and managing airdrop guides, user tiers, and events</p>
+      <div class="flowchart-container">
+        <svg viewBox="0 0 900 700" style="width: 100%; max-width: 900px;">
+          <!-- Start -->
+          <circle cx="450" cy="50" r="30" fill="#48bb78"/>
+          <text x="450" y="55" text-anchor="middle" fill="white" font-weight="600">START</text>
+
+          <!-- Admin Login -->
+          <path d="M 450 80 L 450 120" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="350" y="120" width="200" height="50" fill="#4299e1" rx="5"/>
+          <text x="450" y="150" text-anchor="middle" fill="white" font-weight="600">Admin Login</text>
+
+          <!-- Open Admin Panel -->
+          <path d="M 450 170 L 450 210" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="350" y="210" width="200" height="50" fill="#4299e1" rx="5"/>
+          <text x="450" y="235" text-anchor="middle" fill="white" font-weight="600">Open Admin Panel</text>
+
+          <!-- Decision: What to do? -->
+          <path d="M 450 260 L 550 320 L 450 380 L 350 320 Z" fill="#f59e0b"/>
+          <text x="450" y="325" text-anchor="middle" fill="white" font-weight="600" font-size="11">Action?</text>
+
+          <!-- User Management -->
+          <path d="M 350 320 L 150 320" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="250" y="310" font-size="11" fill="#2d3748" font-weight="600">Users</text>
+
+          <rect x="20" y="295" width="130" height="50" fill="#4299e1" rx="5"/>
+          <text x="85" y="320" text-anchor="middle" fill="white" font-weight="600">Update Tiers</text>
+
+          <path d="M 85 345 L 85 380" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="20" y="380" width="130" height="50" fill="#48bb78" rx="5"/>
+          <text x="85" y="405" text-anchor="middle" fill="white" font-weight="600">Save Changes</text>
+
+          <!-- Airdrop Management -->
+          <path d="M 550 320 L 700 320" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="625" y="310" font-size="11" fill="#2d3748" font-weight="600">Airdrops</text>
+
+          <rect x="700" y="295" width="130" height="50" fill="#4299e1" rx="5"/>
+          <text x="765" y="320" text-anchor="middle" fill="white" font-weight="600">Create/Edit Guide</text>
+
+          <path d="M 765 345 L 765 380" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="700" y="380" width="130" height="50" fill="#4299e1" rx="5"/>
+          <text x="765" y="405" text-anchor="middle" fill="white" font-weight="600">Upload Image</text>
+
+          <path d="M 765 430 L 765 470" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="700" y="470" width="130" height="50" fill="#4299e1" rx="5"/>
+          <text x="765" y="495" text-anchor="middle" fill="white" font-weight="600">Add Phases/Tasks</text>
+
+          <!-- Save to Firestore -->
+          <path d="M 765 520 L 765 560" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <rect x="700" y="560" width="130" height="50" fill="#48bb78" rx="5"/>
+          <text x="765" y="585" text-anchor="middle" fill="white" font-weight="600">Save to Firestore</text>
+
+          <!-- Converge paths -->
+          <path d="M 85 430 L 85 570 L 700 570" stroke="#666" stroke-width="2"/>
+
+          <!-- End -->
+          <path d="M 450 320 L 450 640" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+          <circle cx="450" cy="680" r="30" fill="#48bb78"/>
+          <text x="450" y="685" text-anchor="middle" fill="white" font-weight="600">END</text>
+
+          <!-- Arrow defs -->
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+              <polygon points="0 0, 10 5, 0 10" fill="#666"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </section>
+
+    <footer>
+      <p>Mercurius Hub User Journeys — Complete Flowcharts | All Major Workflows | Last Updated: February 2026</p>
+    </footer>
+  </div>
+</body>
+</html>
