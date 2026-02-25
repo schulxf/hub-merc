@@ -24,9 +24,10 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'assessor';
     }
 
-    // TODO: In Phase 8+, consider adding Cloud Function to sync custom claims
-    // when tier changes in Firestore. This would allow checking request.auth.token.role
-    // for faster JWT-level access control without Firestore reads.
+    // NOTE: Phase 7 MVP uses tier field directly for RBAC (no custom claims).
+    // In Phase 8+, consider upgrading to Blaze plan and adding Cloud Functions
+    // for JWT-level optimization: admin.auth().setCustomUserClaims({ role: tier })
+    // This would sync tier changes to Firebase Auth tokens automatically.
 
     /// Check if the current user is an authorised assessor for a given client.
     /// Reads the client's user document and checks the assessorIds array.
