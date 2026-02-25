@@ -21,6 +21,7 @@ const Wallets = lazy(() => import('../../pages/Wallets'));
 const DeFiPositions = lazy(() => import('../../pages/DeFiPositions'));
 const DeFiToolsLanding = lazy(() => import('../../pages/DeFiToolsLanding'));
 const AssessorDashboard = lazy(() => import('../../pages/AssessorDashboard'));
+const AiCopilot = lazy(() => import('../../pages/AiCopilot'));
 
 // Fallback de loading para Suspense
 const PageLoader = () => (
@@ -104,7 +105,8 @@ const DashboardLayout = () => {
       'defi-tools': 'defi',
       'reminders': 'reminders',
       'carteiras-recomendadas': 'portfolio',
-      'assessor': 'free'
+      'assessor': 'free',
+      'ia-copilot': 'portfolio'
     };
     return map[currentRoute] || 'free';
   };
@@ -224,6 +226,7 @@ const DashboardLayout = () => {
               {currentRoute === 'carteiras-pro' && <Wallets />}
               {currentRoute === 'defi-tools' && <DeFiToolsLanding />}
               {currentRoute === 'assessor' && <AssessorDashboard />}
+              {currentRoute === 'ia-copilot' && <AiCopilot />}
 
               {['analises', 'cursos', 'suporte', 'carteiras-recomendadas', 'research'].includes(currentRoute) && (
                 <MockPage title={getRouteTitle(currentRoute)} />

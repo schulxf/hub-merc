@@ -3,7 +3,7 @@ import {
   ChevronDown, ChevronUp, Briefcase, PieChart,
   Activity, Zap, LayoutGrid,
   ArrowRightLeft, Bell, Layers, GraduationCap, LifeBuoy, LogOut, Lock, Shield,
-  Star, BookOpen, Users
+  Star, BookOpen, Users, Brain
 } from 'lucide-react';
 
 export const MENU_CATEGORIES = [
@@ -13,6 +13,7 @@ export const MENU_CATEGORIES = [
     icon: Briefcase,
     items: [
       { id: 'portfolio', label: 'Portfólio', icon: PieChart, permKey: 'portfolio' },
+      { id: 'ia-copilot', label: 'Assistente IA', icon: Brain, permKey: 'portfolio' },
       { id: 'analises', label: 'Análises', icon: Activity, isMock: true, permKey: 'portfolio' },
       { id: 'carteiras-recomendadas', label: 'Carteiras', icon: Star, isMock: true, permKey: 'portfolio' },
     ]
