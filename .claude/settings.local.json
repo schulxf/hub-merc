@@ -25,7 +25,11 @@
       "Bash(firebase deploy:*)",
       "Bash(npx firebase deploy:*)",
       "Bash(curl:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "mcp__plugin_firebase_firebase__firebase_validate_security_rules",
+      "Bash(npm ls:*)",
+      "Bash(npx:*)",
+      "Bash(bash \"C:\\\\Users\\\\Schulx\\\\.claude\\\\plugins\\\\cache\\\\mhattingpete-claude-skills\\\\engineering-workflow-skills\\\\1.2.0\\\\skills\\\\git-pushing\\\\scripts\\\\smart_commit.sh\" \"refactor\\(admin\\): decompose AdminPanel into 5 focused sub-components with lazy loading:*)"
     ]
   }
 }

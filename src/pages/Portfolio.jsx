@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useReducer, useCallback, useEffect } from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { db, auth } from '../lib/firebase';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -18,6 +18,7 @@ import SnapshotStatus from '../components/portfolio/SnapshotStatus';
 import OpportunityBanner from '../components/portfolio/OpportunityBanner';
 import { seedTransactionsIfEmpty } from '../services/transactionService';
 import { fmt } from '../lib/utils';
+import { portfolioReducer, initialPortfolioState, PORTFOLIO_ACTIONS } from './portfolioReducer';
 
 // ---------------------------------------------------------------------------
 // Tab persistence key (sessionStorage)
@@ -44,7 +45,7 @@ function persistTab(tabId) {
 }
 
 // ---------------------------------------------------------------------------
-// AssetsTab — Tab 2 inner component (needs modal state)
+// AssetsTab — Tab 2 inner component (needs slide-over state)
 // ---------------------------------------------------------------------------
 
 /**
@@ -59,8 +60,8 @@ function persistTab(tabId) {
 function AssetsTab({ onEditAsset, onDeleteAsset }) {
   const { portfolioAssets, livePrices } = usePortfolioContext();
 
-  const [slideOverAsset, setSlideOverAsset] = useState(null);
-  const [isSlideOverOpen, setIsSlideOverOpen] = useState(false);
+  const [slideOverAsset, setSlideOverAsset] = React.useState(null);
+  const [isSlideOverOpen, setIsSlideOverOpen] = React.useState(false);
 
   const handleRowClick = useCallback((asset) => {
     setSlideOverAsset(asset);
@@ -102,11 +103,9 @@ function AssetsTab({ onEditAsset, onDeleteAsset }) {
 /**
  * PortfolioContent — inner component that consumes PortfolioContext.
  *
- * Manages:
- *   - Active tab state (persisted to sessionStorage)
- *   - Add/Edit asset modal
- *   - On-chain import modal
- *   - All Firestore write/delete handlers
+ * All local UI state is managed by a single useReducer call (portfolioReducer).
+ * This replaces the original 10 useState hooks, centralising the modal logic
+ * and the on-chain import flow into predictable, testable transitions.
  *
  * @returns {React.ReactElement}
  */
@@ -125,28 +124,19 @@ function PortfolioContent() {
   const { isCapturing: isCapturingSnapshot, lastCapturedAt } =
     useFirstLoadSnapshot(portfolioAssets, livePrices);
 
+  // ===== SINGLE REDUCER FOR ALL PAGE STATE =====
+  const [state, dispatch] = useReducer(portfolioReducer, initialPortfolioState);
+
+  // Destructure for readability
+  const { modal, addingOnChain, syncWarning } = state;
+
   // ===== TAB STATE =====
-  const [activeTab, setActiveTab] = useState(readPersistedTab);
+  const [activeTab, setActiveTab] = React.useState(readPersistedTab);
 
   const handleSetActiveTab = useCallback((tabId) => {
     setActiveTab(tabId);
     persistTab(tabId);
   }, []);
-
-  // ===== MODAL STATE =====
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditingAsset, setIsEditingAsset] = useState(null);
-  const [selectedCoin, setSelectedCoin] = useState('bitcoin');
-  const [amount, setAmount] = useState('');
-  const [buyPrice, setBuyPrice] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-
-  // ===== ON-CHAIN IMPORT STATE =====
-  const [addingOnChainToken, setAddingOnChainToken] = useState(null);
-  const [isLookingUp, setIsLookingUp] = useState(null);
-
-  // ===== WARNING STATE =====
-  const [localSyncWarning, setLocalSyncWarning] = useState('');
 
   // ===== SEED TRANSACTIONS (once assets are loaded) =====
   useEffect(() => {
@@ -161,50 +151,46 @@ function PortfolioContent() {
 
   const handleAddAsset = async (e) => {
     e.preventDefault();
-    if (!auth.currentUser || !amount || !buyPrice) return;
+    if (!auth.currentUser || !modal.amount || !modal.buyPrice) return;
 
-    setIsSaving(true);
-    const coin = SUPPORTED_COINS.find((c) => c.id === selectedCoin);
+    dispatch({ type: PORTFOLIO_ACTIONS.SAVE_START });
+    const coin = SUPPORTED_COINS.find((c) => c.id === modal.selectedCoin);
 
     try {
-      const assetRef = doc(db, 'users', auth.currentUser.uid, 'portfolio', selectedCoin);
+      const assetRef = doc(db, 'users', auth.currentUser.uid, 'portfolio', modal.selectedCoin);
       await setDoc(assetRef, {
-        coinId: selectedCoin,
+        coinId: modal.selectedCoin,
         symbol: coin.symbol,
         name: coin.name,
         color: coin.color,
-        amount: parseFloat(amount),
-        averageBuyPrice: parseFloat(buyPrice),
+        amount: parseFloat(modal.amount),
+        averageBuyPrice: parseFloat(modal.buyPrice),
         updatedAt: new Date().toISOString(),
       });
 
-      setIsModalOpen(false);
-      setIsEditingAsset(null);
-      setAmount('');
-      setBuyPrice('');
-      setSelectedCoin('bitcoin');
+      dispatch({ type: PORTFOLIO_ACTIONS.CLOSE_MODAL });
     } catch (error) {
       console.error('Erro ao guardar ativo:', error);
       alert('Erro ao guardar ativo. Tente novamente.');
     } finally {
-      setIsSaving(false);
+      dispatch({ type: PORTFOLIO_ACTIONS.SAVE_END });
     }
   };
 
   const handleEditAsset = useCallback((asset) => {
-    setSelectedCoin(asset.coinId);
-    setAmount(asset.amount.toString());
-    setBuyPrice(asset.averageBuyPrice.toString());
-    setIsEditingAsset(asset.id);
-    setIsModalOpen(true);
+    dispatch({
+      type: PORTFOLIO_ACTIONS.OPEN_MODAL_EDIT,
+      payload: {
+        assetId: asset.id,
+        coinId: asset.coinId,
+        amount: asset.amount,
+        buyPrice: asset.averageBuyPrice,
+      },
+    });
   }, []);
 
   const handleCancelModal = useCallback(() => {
-    setIsModalOpen(false);
-    setIsEditingAsset(null);
-    setAmount('');
-    setBuyPrice('');
-    setSelectedCoin('bitcoin');
+    dispatch({ type: PORTFOLIO_ACTIONS.CLOSE_MODAL });
   }, []);
 
   const handleRemoveAsset = useCallback(async (coinId) => {
@@ -220,11 +206,7 @@ function PortfolioContent() {
   }, []);
 
   const handleAddAssetClick = useCallback(() => {
-    setIsEditingAsset(null);
-    setSelectedCoin('bitcoin');
-    setAmount('');
-    setBuyPrice('');
-    setIsModalOpen(true);
+    dispatch({ type: PORTFOLIO_ACTIONS.OPEN_MODAL });
   }, []);
 
   const handleRefresh = useCallback(() => {
@@ -233,31 +215,38 @@ function PortfolioContent() {
 
   const handleAddOnChainToken = async (token) => {
     if (!auth.currentUser) return;
-    setIsLookingUp(token.id);
+    dispatch({
+      type: PORTFOLIO_ACTIONS.ONCHAIN_LOOKUP_START,
+      payload: { tokenId: token.id },
+    });
 
     try {
       const cgMatch = await lookupCoinGeckoId(token.symbol);
       const coinId = cgMatch?.id || token.symbol.toLowerCase();
 
-      setAddingOnChainToken({
-        coinId,
-        symbol: token.symbol,
-        name: cgMatch?.name || token.name,
-        amount: token.amount,
+      dispatch({
+        type: PORTFOLIO_ACTIONS.ONCHAIN_LOOKUP_END,
+        payload: {
+          token: {
+            coinId,
+            symbol: token.symbol,
+            name: cgMatch?.name || token.name,
+            amount: token.amount,
+          },
+        },
       });
     } catch (error) {
       console.error('Erro ao buscar token:', error);
-    } finally {
-      setIsLookingUp(null);
+      dispatch({ type: PORTFOLIO_ACTIONS.ONCHAIN_CLEAR });
     }
   };
 
   const handleSaveOnChainAsset = async () => {
-    if (!auth.currentUser || !addingOnChainToken) return;
-    setIsSaving(true);
+    if (!auth.currentUser || !addingOnChain.token) return;
+    dispatch({ type: PORTFOLIO_ACTIONS.SAVE_START });
 
     try {
-      const t = addingOnChainToken;
+      const t = addingOnChain.token;
       const assetRef = doc(db, 'users', auth.currentUser.uid, 'portfolio', t.coinId);
 
       await setDoc(assetRef, {
@@ -271,12 +260,12 @@ function PortfolioContent() {
         updatedAt: new Date().toISOString(),
       });
 
-      setAddingOnChainToken(null);
+      dispatch({ type: PORTFOLIO_ACTIONS.ONCHAIN_CLEAR });
     } catch (error) {
       console.error('Erro ao guardar ativo on-chain:', error);
       alert('Erro ao guardar ativo. Tente novamente.');
     } finally {
-      setIsSaving(false);
+      dispatch({ type: PORTFOLIO_ACTIONS.SAVE_END });
     }
   };
 
@@ -366,7 +355,6 @@ function PortfolioContent() {
 
         {/* Right: Action Buttons */}
         <div className="flex items-center gap-2 md:gap-3 flex-wrap md:flex-nowrap">
-          {/* Add Transaction dropdown — shown on Tab 2 and available everywhere */}
           <AddTransactionDropdown />
 
           <PortfolioHeader
@@ -377,11 +365,11 @@ function PortfolioContent() {
       </div>
 
       {/* ========== 2. ALERTS ========== */}
-      {(localSyncWarning || onChainWarning || onChainError) && (
+      {(syncWarning || onChainWarning || onChainError) && (
         <div className="mb-6 bg-orange-500/10 border border-orange-500/30 rounded-lg px-4 py-3 text-sm text-orange-200 flex items-start gap-3 animate-fade-in">
           <AlertCircle className="w-5 h-5 mt-0.5 text-orange-400 flex-shrink-0" />
           <div className="space-y-1">
-            {localSyncWarning && <p>{localSyncWarning}</p>}
+            {syncWarning && <p>{syncWarning}</p>}
             {onChainWarning && <p>{onChainWarning}</p>}
             {onChainError && <p>{onChainError}</p>}
           </div>
@@ -456,7 +444,9 @@ function PortfolioContent() {
                 <tbody>
                   {onChainTokens.map((token) => {
                     const alreadyAdded = Array.isArray(portfolioAssets)
-                      ? portfolioAssets.some((a) => a.symbol?.toUpperCase() === token.symbol?.toUpperCase())
+                      ? portfolioAssets.some(
+                          (a) => a.symbol?.toUpperCase() === token.symbol?.toUpperCase()
+                        )
                       : false;
 
                     return (
@@ -464,8 +454,12 @@ function PortfolioContent() {
                         key={token.id}
                         className="transition-colors"
                         style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                        }}
                       >
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
@@ -475,7 +469,10 @@ function PortfolioContent() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <span className="font-mono text-sm text-text-primary">
-                            {token.amount?.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 8 })}
+                            {token.amount?.toLocaleString('en-US', {
+                              minimumFractionDigits: 4,
+                              maximumFractionDigits: 8,
+                            })}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -488,7 +485,7 @@ function PortfolioContent() {
                         <td className="px-6 py-4 text-right">
                           <button
                             onClick={() => handleAddOnChainToken(token)}
-                            disabled={alreadyAdded || isLookingUp === token.id}
+                            disabled={alreadyAdded || addingOnChain.isLooking === token.id}
                             className="px-3 py-1.5 text-xs font-bold rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed outline-none"
                             style={{
                               background: 'rgba(0,255,239,0.08)',
@@ -497,7 +494,7 @@ function PortfolioContent() {
                             }}
                             title={alreadyAdded ? 'Ja adicionado' : 'Adicionar ao portfolio'}
                           >
-                            {isLookingUp === token.id ? (
+                            {addingOnChain.isLooking === token.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : alreadyAdded ? (
                               'Adicionado'
@@ -517,7 +514,7 @@ function PortfolioContent() {
       )}
 
       {/* ========== MODAL ADICIONAR/EDITAR ATIVO ========== */}
-      {isModalOpen && (
+      {modal.isOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
           style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }}
@@ -533,17 +530,31 @@ function PortfolioContent() {
               boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
             }}
           >
-            <div className="absolute top-0 left-0 right-0" style={{ height: '1px', background: 'linear-gradient(to right, transparent, rgba(0,255,239,0.5), rgba(26,111,212,0.3))' }} />
+            <div
+              className="absolute top-0 left-0 right-0"
+              style={{
+                height: '1px',
+                background:
+                  'linear-gradient(to right, transparent, rgba(0,255,239,0.5), rgba(26,111,212,0.3))',
+              }}
+            />
             <h2 className="text-2xl font-black text-text-primary mb-6">
-              {isEditingAsset ? 'Editar Ativo' : 'Adicionar Ativo'}
+              {modal.isEditing ? 'Editar Ativo' : 'Adicionar Ativo'}
             </h2>
 
             <form onSubmit={handleAddAsset} className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-text-secondary mb-2">Moeda</label>
+                <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  Moeda
+                </label>
                 <select
-                  value={selectedCoin}
-                  onChange={(e) => setSelectedCoin(e.target.value)}
+                  value={modal.selectedCoin}
+                  onChange={(e) =>
+                    dispatch({
+                      type: PORTFOLIO_ACTIONS.SET_FORM_FIELD,
+                      payload: { field: 'selectedCoin', value: e.target.value },
+                    })
+                  }
                   className="w-full bg-bg-tertiary border border-border-subtle rounded-lg px-4 py-3 text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 focus-visible:border-cyan transition-all appearance-none"
                 >
                   {SUPPORTED_COINS.map((c) => (
@@ -563,8 +574,13 @@ function PortfolioContent() {
                   step="any"
                   min="0"
                   required
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  value={modal.amount}
+                  onChange={(e) =>
+                    dispatch({
+                      type: PORTFOLIO_ACTIONS.SET_FORM_FIELD,
+                      payload: { field: 'amount', value: e.target.value },
+                    })
+                  }
                   placeholder="Ex: 0.5"
                   className="w-full bg-bg-tertiary border border-border-subtle rounded-lg px-4 py-3 text-text-primary placeholder-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 focus-visible:border-cyan transition-all"
                 />
@@ -575,14 +591,21 @@ function PortfolioContent() {
                   Preco Medio de Compra (USD)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary font-semibold">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary font-semibold">
+                    $
+                  </span>
                   <input
                     type="number"
                     step="any"
                     min="0"
                     required
-                    value={buyPrice}
-                    onChange={(e) => setBuyPrice(e.target.value)}
+                    value={modal.buyPrice}
+                    onChange={(e) =>
+                      dispatch({
+                        type: PORTFOLIO_ACTIONS.SET_FORM_FIELD,
+                        payload: { field: 'buyPrice', value: e.target.value },
+                      })
+                    }
                     placeholder="Ex: 60000"
                     className="w-full bg-bg-tertiary border border-border-subtle rounded-lg pl-8 pr-4 py-3 text-text-primary placeholder-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 focus-visible:border-cyan transition-all"
                   />
@@ -599,10 +622,14 @@ function PortfolioContent() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSaving}
+                  disabled={modal.isSaving}
                   className="flex-1 bg-cyan text-bg px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 hover:shadow-cyan"
                 >
-                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Guardar'}
+                  {modal.isSaving ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    'Guardar'
+                  )}
                 </button>
               </div>
             </form>
@@ -611,7 +638,7 @@ function PortfolioContent() {
       )}
 
       {/* ========== MODAL: CONFIRMAR IMPORTACAO ON-CHAIN ========== */}
-      {addingOnChainToken && (
+      {addingOnChain.token && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
           style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }}
@@ -627,8 +654,17 @@ function PortfolioContent() {
               boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
             }}
           >
-            <div className="absolute top-0 left-0 right-0" style={{ height: '1px', background: 'linear-gradient(to right, transparent, rgba(0,255,239,0.5), rgba(26,111,212,0.3))' }} />
-            <h2 className="text-2xl font-black text-text-primary mb-6">Adicionar ao Portfolio</h2>
+            <div
+              className="absolute top-0 left-0 right-0"
+              style={{
+                height: '1px',
+                background:
+                  'linear-gradient(to right, transparent, rgba(0,255,239,0.5), rgba(26,111,212,0.3))',
+              }}
+            />
+            <h2 className="text-2xl font-black text-text-primary mb-6">
+              Adicionar ao Portfolio
+            </h2>
             <div className="space-y-5">
               <div
                 className="p-5 space-y-3"
@@ -639,22 +675,35 @@ function PortfolioContent() {
                 }}
               >
                 <div>
-                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1">Token</p>
-                  <p className="text-text-primary font-bold text-lg">{addingOnChainToken.symbol}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1">Nome</p>
-                  <p className="text-text-primary">{addingOnChainToken.name}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1">Quantidade</p>
-                  <p className="text-text-primary font-mono">
-                    {addingOnChainToken.amount.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 8 })}
+                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1">
+                    Token
+                  </p>
+                  <p className="text-text-primary font-bold text-lg">
+                    {addingOnChain.token.symbol}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1">CoinGecko ID</p>
-                  <p className="text-cyan font-mono text-xs">{addingOnChainToken.coinId}</p>
+                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1">
+                    Nome
+                  </p>
+                  <p className="text-text-primary">{addingOnChain.token.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1">
+                    Quantidade
+                  </p>
+                  <p className="text-text-primary font-mono">
+                    {addingOnChain.token.amount.toLocaleString('en-US', {
+                      minimumFractionDigits: 4,
+                      maximumFractionDigits: 8,
+                    })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1">
+                    CoinGecko ID
+                  </p>
+                  <p className="text-cyan font-mono text-xs">{addingOnChain.token.coinId}</p>
                 </div>
               </div>
               <p className="text-xs text-text-tertiary bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
@@ -662,17 +711,21 @@ function PortfolioContent() {
               </p>
               <div className="flex gap-3 mt-6">
                 <button
-                  onClick={() => setAddingOnChainToken(null)}
+                  onClick={() => dispatch({ type: PORTFOLIO_ACTIONS.ONCHAIN_CLEAR })}
                   className="flex-1 px-4 py-3 rounded-lg font-bold text-text-secondary bg-bg-quaternary hover:bg-bg-quaternary/80 transition-all outline-none focus-visible:ring-2 focus-visible:ring-cyan/50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSaveOnChainAsset}
-                  disabled={isSaving}
+                  disabled={modal.isSaving}
                   className="flex-1 bg-cyan text-bg px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 hover:shadow-cyan"
                 >
-                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirmar'}
+                  {modal.isSaving ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    'Confirmar'
+                  )}
                 </button>
               </div>
             </div>
