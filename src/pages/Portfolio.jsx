@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { AlertCircle, Loader2, Wallet } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { db, auth } from '../lib/firebase';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { SUPPORTED_COINS } from '../data/mockDb';
@@ -8,24 +8,105 @@ import { lookupCoinGeckoId } from '../lib/web3Api';
 import { PortfolioProvider, usePortfolioContext } from '../components/portfolio/PortfolioContext';
 import { useFirstLoadSnapshot } from '../hooks/useFirstLoadSnapshot';
 import PortfolioHeader from '../components/portfolio/PortfolioHeader';
-import KpiCards from '../components/portfolio/KpiCards';
-import PortfolioSidebar from '../components/portfolio/PortfolioSidebar';
-import ChartArea from '../components/portfolio/ChartArea';
-import ChartAreaEvolution from '../components/portfolio/ChartAreaEvolution';
-import AssetTable from '../components/portfolio/AssetTable';
+import PortfolioTabs from '../components/portfolio/PortfolioTabs';
+import OverviewTab from '../components/portfolio/OverviewTab';
+import AdvancedAssetTable from '../components/portfolio/AdvancedAssetTable';
+import AssetDetailSlideOver from '../components/portfolio/AssetDetailSlideOver';
+import TransactionHistory from '../components/portfolio/TransactionHistory';
+import AddTransactionDropdown from '../components/portfolio/AddTransactionDropdown';
 import SnapshotStatus from '../components/portfolio/SnapshotStatus';
 import OpportunityBanner from '../components/portfolio/OpportunityBanner';
+import { seedTransactionsIfEmpty } from '../services/transactionService';
+import { fmt } from '../lib/utils';
 
 // ---------------------------------------------------------------------------
-// PortfolioContent — inner component that consumes PortfolioContext
+// Tab persistence key (sessionStorage)
+// ---------------------------------------------------------------------------
+
+const SESSION_TAB_KEY = 'portfolio_active_tab';
+const VALID_TABS = ['overview', 'assets', 'history'];
+
+function readPersistedTab() {
+  try {
+    const saved = sessionStorage.getItem(SESSION_TAB_KEY);
+    return VALID_TABS.includes(saved) ? saved : 'overview';
+  } catch {
+    return 'overview';
+  }
+}
+
+function persistTab(tabId) {
+  try {
+    sessionStorage.setItem(SESSION_TAB_KEY, tabId);
+  } catch {
+    // sessionStorage unavailable — proceed silently
+  }
+}
+
+// ---------------------------------------------------------------------------
+// AssetsTab — Tab 2 inner component (needs modal state)
 // ---------------------------------------------------------------------------
 
 /**
- * PortfolioContent — renders the full portfolio UI.
+ * AssetsTab — renders the "Gestao de Ativos" tab.
  *
- * Separated from Portfolio so it can call usePortfolioContext() after
- * PortfolioProvider has been mounted in the tree.  All modal state and
- * Firestore write/delete handlers live here.
+ * Manages the AssetDetailSlideOver state locally since it's only needed here.
+ *
+ * @param {object}   props
+ * @param {Function} props.onEditAsset   - Delegates edit to Portfolio-level modal
+ * @param {Function} props.onDeleteAsset - Delegates delete to Portfolio-level handler
+ */
+function AssetsTab({ onEditAsset, onDeleteAsset }) {
+  const { portfolioAssets, livePrices } = usePortfolioContext();
+
+  const [slideOverAsset, setSlideOverAsset] = useState(null);
+  const [isSlideOverOpen, setIsSlideOverOpen] = useState(false);
+
+  const handleRowClick = useCallback((asset) => {
+    setSlideOverAsset(asset);
+    setIsSlideOverOpen(true);
+  }, []);
+
+  const handleCloseSlideOver = useCallback(() => {
+    setIsSlideOverOpen(false);
+  }, []);
+
+  const currentPriceForSlideOver = slideOverAsset
+    ? (livePrices[slideOverAsset.coinId]?.usd ?? 0)
+    : 0;
+
+  return (
+    <>
+      <div className="animate-fade-in">
+        <AdvancedAssetTable
+          onRowClick={handleRowClick}
+          onEditAsset={onEditAsset}
+          onDeleteAsset={onDeleteAsset}
+        />
+      </div>
+
+      <AssetDetailSlideOver
+        asset={slideOverAsset}
+        currentPrice={currentPriceForSlideOver}
+        isOpen={isSlideOverOpen}
+        onClose={handleCloseSlideOver}
+      />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PortfolioContent
+// ---------------------------------------------------------------------------
+
+/**
+ * PortfolioContent — inner component that consumes PortfolioContext.
+ *
+ * Manages:
+ *   - Active tab state (persisted to sessionStorage)
+ *   - Add/Edit asset modal
+ *   - On-chain import modal
+ *   - All Firestore write/delete handlers
  *
  * @returns {React.ReactElement}
  */
@@ -44,6 +125,14 @@ function PortfolioContent() {
   const { isCapturing: isCapturingSnapshot, lastCapturedAt } =
     useFirstLoadSnapshot(portfolioAssets, livePrices);
 
+  // ===== TAB STATE =====
+  const [activeTab, setActiveTab] = useState(readPersistedTab);
+
+  const handleSetActiveTab = useCallback((tabId) => {
+    setActiveTab(tabId);
+    persistTab(tabId);
+  }, []);
+
   // ===== MODAL STATE =====
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditingAsset, setIsEditingAsset] = useState(null);
@@ -56,8 +145,17 @@ function PortfolioContent() {
   const [addingOnChainToken, setAddingOnChainToken] = useState(null);
   const [isLookingUp, setIsLookingUp] = useState(null);
 
-  // ===== WARNING STATE (sync without wallets) =====
+  // ===== WARNING STATE =====
   const [localSyncWarning, setLocalSyncWarning] = useState('');
+
+  // ===== SEED TRANSACTIONS (once assets are loaded) =====
+  useEffect(() => {
+    if (Array.isArray(portfolioAssets) && portfolioAssets.length > 0) {
+      seedTransactionsIfEmpty(portfolioAssets).catch((err) => {
+        console.warn('[Portfolio] seed transactions failed:', err);
+      });
+    }
+  }, [portfolioAssets]);
 
   // ===== HANDLERS =====
 
@@ -129,11 +227,6 @@ function PortfolioContent() {
     setIsModalOpen(true);
   }, []);
 
-  /**
-   * Placeholder refresh handler — stabilised with useCallback so the reference
-   * is identical across renders and PortfolioHeader (React.memo) is not forced
-   * to re-render unnecessarily.
-   */
   const handleRefresh = useCallback(() => {
     // Future: trigger a manual price refresh via useCryptoPrices
   }, []);
@@ -187,7 +280,7 @@ function PortfolioContent() {
     }
   };
 
-  // ===== DERIVED PORTFOLIO METRICS =====
+  // ===== DERIVED PORTFOLIO METRICS (for header) =====
 
   const totalValue = Array.isArray(portfolioAssets)
     ? portfolioAssets.reduce((sum, asset) => {
@@ -195,36 +288,6 @@ function PortfolioContent() {
         return sum + asset.amount * price;
       }, 0)
     : 0;
-
-  const totalInvestedAmount = Array.isArray(portfolioAssets)
-    ? portfolioAssets.reduce((sum, asset) => {
-        return sum + asset.amount * (asset.averageBuyPrice ?? 0);
-      }, 0)
-    : 0;
-
-  const totalProfit = totalValue - totalInvestedAmount;
-
-  const bestAsset = (() => {
-    if (!Array.isArray(portfolioAssets) || portfolioAssets.length === 0) return null;
-
-    let best = null;
-    let bestRoi = -Infinity;
-
-    for (const asset of portfolioAssets) {
-      const invested = asset.amount * (asset.averageBuyPrice ?? 0);
-      if (invested <= 0) continue; // skip assets with no cost basis
-
-      const currentValue = asset.amount * (livePrices[asset.coinId]?.usd ?? 0);
-      const roi = ((currentValue - invested) / invested) * 100;
-
-      if (roi > bestRoi) {
-        bestRoi = roi;
-        best = { symbol: asset.symbol?.toUpperCase() ?? asset.coinId, roi };
-      }
-    }
-
-    return best;
-  })();
 
   // ===== LOADING STATE =====
 
@@ -240,58 +303,39 @@ function PortfolioContent() {
 
   return (
     <div className="animate-fade-in pb-12 px-6 md:px-8 max-w-[1600px] mx-auto relative min-h-screen">
-      {/* ── ATMOSPHERIC BACKGROUND ───────────────────────────────────────── */}
-      <div className="fixed inset-0 pointer-events-none -z-10">
-        {/* Dark base */}
-        <div className="absolute inset-0" style={{ background: '#07090C' }} />
 
-        {/* Teal radial orb — top-left */}
+      {/* ── ATMOSPHERIC BACKGROUND ──────────────────────────────────────── */}
+      <div className="fixed inset-0 pointer-events-none -z-10">
+        <div className="absolute inset-0" style={{ background: '#07090C' }} />
         <div
           className="absolute rounded-full"
           style={{
-            top: '-160px',
-            left: '-120px',
-            width: '720px',
-            height: '720px',
+            top: '-160px', left: '-120px',
+            width: '720px', height: '720px',
             background: 'radial-gradient(circle, rgba(0,255,239,0.12) 0%, transparent 70%)',
             filter: 'blur(40px)',
           }}
         />
-
-        {/* Blue radial orb — bottom-right */}
         <div
           className="absolute rounded-full"
           style={{
-            bottom: '-200px',
-            right: '-160px',
-            width: '640px',
-            height: '640px',
+            bottom: '-200px', right: '-160px',
+            width: '640px', height: '640px',
             background: 'radial-gradient(circle, rgba(26,111,212,0.1) 0%, transparent 70%)',
             filter: 'blur(40px)',
           }}
         />
-
-        {/* Subtle center bloom */}
         <div
           className="absolute rounded-full"
           style={{
-            top: '40%',
-            left: '50%',
+            top: '40%', left: '50%',
             transform: 'translate(-50%, -50%)',
-            width: '500px',
-            height: '500px',
+            width: '500px', height: '500px',
             background: 'radial-gradient(circle, rgba(0,255,239,0.04) 0%, transparent 70%)',
             filter: 'blur(60px)',
           }}
         />
-
-        {/* Dark overlay for depth */}
-        <div
-          className="absolute inset-0"
-          style={{ background: 'rgba(7,9,12,0.55)' }}
-        />
-
-        {/* Grain texture */}
+        <div className="absolute inset-0" style={{ background: 'rgba(7,9,12,0.55)' }} />
         <svg className="absolute inset-0 w-full h-full" style={{ opacity: 0.025 }}>
           <filter id="grain">
             <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" />
@@ -301,28 +345,30 @@ function PortfolioContent() {
         </svg>
       </div>
 
-      {/* ========== 1. HEADER: PALCO PRINCIPAL ========== */}
+      {/* ========== 1. HEADER ========== */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pt-4">
         {/* Left: Title + Value */}
         <div>
           <div className="flex items-center gap-3 mb-3">
-            <h1 className="text-2xl font-black text-text-primary tracking-tight">Meu Portfólio</h1>
+            <h1 className="text-2xl font-black text-text-primary tracking-tight">Meu Portfolio</h1>
             <div className="px-3 py-1 rounded-lg bg-cyan/10 border border-cyan/20 text-cyan text-xs font-bold uppercase tracking-widest">
               Principal
             </div>
           </div>
 
-          {/* Big Portfolio Value */}
           <div className="flex items-baseline gap-4 md:gap-6 mt-3">
             <h2 className="text-5xl md:text-6xl font-black text-text-primary tracking-tighter leading-none">
               ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h2>
           </div>
-          <p className="text-sm text-text-tertiary mt-2 font-medium">Atualizado nas últimas 24h</p>
+          <p className="text-sm text-text-tertiary mt-2 font-medium">Atualizado nas ultimas 24h</p>
         </div>
 
         {/* Right: Action Buttons */}
         <div className="flex items-center gap-2 md:gap-3 flex-wrap md:flex-nowrap">
+          {/* Add Transaction dropdown — shown on Tab 2 and available everywhere */}
+          <AddTransactionDropdown />
+
           <PortfolioHeader
             onAddAsset={handleAddAssetClick}
             onRefresh={handleRefresh}
@@ -348,187 +394,30 @@ function PortfolioContent() {
         <OpportunityBanner onSwapClick={handleAddAssetClick} />
       </div>
 
-      {/* ========== 4. KPI CARDS ========== */}
-      <section className="mb-8 animate-fade-in">
-        <KpiCards />
-      </section>
+      {/* ========== 4. TABS NAVIGATION ========== */}
+      <PortfolioTabs activeTab={activeTab} setActiveTab={handleSetActiveTab} />
 
-      {/* ========== 5. MAIN GRID: 60/40 Charts ========== */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-8">
+      {/* ========== 5. TAB CONTENT ========== */}
 
-        {/* ── LEFT: Evolução (7/12 ≈ 58%) ───────────────────────────── */}
-        <div
-          className="lg:col-span-7 relative overflow-hidden flex flex-col animate-fade-in transition-all duration-300"
-          style={{
-            background: 'rgba(255,255,255,0.02)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: '18px',
-          }}
-        >
-          {/* Teal accent line */}
-          <div
-            className="absolute top-0 left-0 right-0 pointer-events-none"
-            style={{
-              height: '1px',
-              background: 'linear-gradient(to right, transparent, rgba(0,255,239,0.55), rgba(26,111,212,0.3))',
-              zIndex: 1,
-            }}
-          />
+      {/* Tab 1: Visao Geral */}
+      {activeTab === 'overview' && <OverviewTab />}
 
-          {/* Card header */}
-          <div
-            className="flex items-center justify-between px-6 pt-5 pb-4"
-            style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-          >
-            <h3 className="text-sm font-bold text-text-primary tracking-tight">
-              Evolução do Patrimônio
-            </h3>
-          </div>
+      {/* Tab 2: Gestao de Ativos */}
+      {activeTab === 'assets' && (
+        <AssetsTab
+          onEditAsset={handleEditAsset}
+          onDeleteAsset={handleRemoveAsset}
+        />
+      )}
 
-          {/* Chart */}
-          <div className="flex-1 px-5 pb-5 pt-4" style={{ minHeight: '320px' }}>
-            <ChartAreaEvolution />
-          </div>
-        </div>
+      {/* Tab 3: Historico de Transacoes */}
+      {activeTab === 'history' && <TransactionHistory />}
 
-        {/* ── RIGHT: Alocação + Stats (5/12 ≈ 42%) ─────────────────── */}
-        <div className="lg:col-span-5 flex flex-col gap-4 animate-fade-in">
-
-          {/* Alocação de Ativos */}
-          <div
-            className="relative overflow-hidden flex-1 p-5 transition-all duration-300"
-            style={{
-              background: 'rgba(255,255,255,0.02)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: '18px',
-            }}
-          >
-            {/* Blue accent line */}
-            <div
-              className="absolute top-0 left-0 right-0 pointer-events-none"
-              style={{
-                height: '1px',
-                background: 'linear-gradient(to right, transparent, rgba(26,111,212,0.5), rgba(0,255,239,0.25))',
-                zIndex: 1,
-              }}
-            />
-
-            <h3
-              className="text-sm font-bold mb-4"
-              style={{ color: '#E5E7EB', letterSpacing: '-0.01em' }}
-            >
-              Alocação de Ativos
-            </h3>
-
-            <ChartArea />
-          </div>
-
-          {/* Stats 2-col grid */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Lucro Total */}
-            <div
-              className="relative overflow-hidden p-4 transition-all duration-300"
-              style={{
-                background: 'rgba(34,197,94,0.05)',
-                border: '1px solid rgba(34,197,94,0.15)',
-                borderRadius: '14px',
-                backdropFilter: 'blur(20px)',
-              }}
-            >
-              <div
-                className="absolute top-0 left-0 right-0 pointer-events-none"
-                style={{
-                  height: '1px',
-                  background: 'linear-gradient(to right, transparent, rgba(34,197,94,0.4), transparent)',
-                }}
-              />
-              <p
-                className="text-xs font-bold uppercase tracking-widest mb-2"
-                style={{ color: '#6B7280' }}
-              >
-                Lucro Total
-              </p>
-              <p
-                className="text-lg font-black"
-                style={{ color: totalProfit >= 0 ? '#4ADE80' : '#F87171' }}
-              >
-                {totalProfit >= 0 ? '+' : '-'}$
-                {Math.abs(totalProfit).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-            </div>
-
-            {/* Melhor Ativo */}
-            <div
-              className="relative overflow-hidden p-4 transition-all duration-300"
-              style={{
-                background: 'rgba(0,255,239,0.03)',
-                border: '1px solid rgba(0,255,239,0.1)',
-                borderRadius: '14px',
-                backdropFilter: 'blur(20px)',
-              }}
-            >
-              <div
-                className="absolute top-0 left-0 right-0 pointer-events-none"
-                style={{
-                  height: '1px',
-                  background: 'linear-gradient(to right, transparent, rgba(0,255,239,0.35), transparent)',
-                }}
-              />
-              <p
-                className="text-xs font-bold uppercase tracking-widest mb-2"
-                style={{ color: '#6B7280' }}
-              >
-                Melhor Ativo
-              </p>
-              {bestAsset ? (
-                <p
-                  className="text-lg font-black flex items-center gap-2"
-                  style={{ color: '#00FFEF' }}
-                >
-                  {bestAsset.symbol}
-                  <span
-                    className="text-xs font-bold px-2 py-0.5 rounded-md"
-                    style={{
-                      color: bestAsset.roi >= 0 ? '#4ADE80' : '#F87171',
-                      background: bestAsset.roi >= 0 ? 'rgba(34,197,94,0.12)' : 'rgba(248,113,113,0.12)',
-                    }}
-                  >
-                    {bestAsset.roi >= 0 ? '+' : ''}
-                    {bestAsset.roi.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
-                  </span>
-                </p>
-              ) : (
-                <p className="text-sm font-medium" style={{ color: '#6B7280' }}>—</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ========== 6. ASSET TABLE ========== */}
-      <section className="mb-8 animate-fade-in">
-        <div className="space-y-4 mb-5">
-          <h3 className="text-lg font-black text-text-primary flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-cyan" />
-            Seus Ativos
-          </h3>
-          <p className="text-sm text-text-tertiary">Gerencie e acompanhe sua carteira de investimentos</p>
-        </div>
-        <div className="hover:shadow-2xl hover:border-cyan/30 transition-all duration-300">
-          <AssetTable onDeleteAsset={handleRemoveAsset} />
-        </div>
-      </section>
-
-      {/* ========== 7. ON-CHAIN TOKENS ========== */}
-      {onChainTokens && onChainTokens.length > 0 && (
-        <section className="animate-fade-in">
+      {/* ========== ON-CHAIN TOKENS (only on overview tab) ========== */}
+      {activeTab === 'overview' && onChainTokens && onChainTokens.length > 0 && (
+        <section className="animate-fade-in mt-8">
           <div className="space-y-4 mb-5">
             <div className="flex items-center gap-3">
-              <Wallet className="w-5 h-5 text-cyan" />
               <div>
                 <h2 className="text-lg font-black text-text-primary">Tokens On-Chain</h2>
                 <p className="text-sm text-text-tertiary">Ativos detectados nas suas carteiras</p>
@@ -546,7 +435,6 @@ function PortfolioContent() {
               borderRadius: '18px',
             }}
           >
-            {/* Accent line */}
             <div
               className="absolute top-0 left-0 right-0 pointer-events-none"
               style={{
@@ -562,7 +450,7 @@ function PortfolioContent() {
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Token</th>
                     <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Quantidade</th>
                     <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Valor USD</th>
-                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Ação</th>
+                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Acao</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -587,20 +475,14 @@ function PortfolioContent() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <span className="font-mono text-sm text-text-primary">
-                            {token.amount?.toLocaleString('en-US', {
-                              minimumFractionDigits: 4,
-                              maximumFractionDigits: 8,
-                            })}
+                            {token.amount?.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 8 })}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <span className="font-mono text-sm text-text-primary">
                             {typeof token.valueUsd === 'number'
-                              ? `$${token.valueUsd.toLocaleString('en-US', {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}`
-                              : '—'}
+                              ? `$${fmt.usd(token.valueUsd)}`
+                              : '-'}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -613,12 +495,12 @@ function PortfolioContent() {
                               color: '#00FFEF',
                               border: '1px solid rgba(0,255,239,0.15)',
                             }}
-                            title={alreadyAdded ? 'Já adicionado' : 'Adicionar ao portfólio'}
+                            title={alreadyAdded ? 'Ja adicionado' : 'Adicionar ao portfolio'}
                           >
                             {isLookingUp === token.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : alreadyAdded ? (
-                              '✓ Adicionado'
+                              'Adicionado'
                             ) : (
                               '+ Adicionar'
                             )}
@@ -634,9 +516,12 @@ function PortfolioContent() {
         </section>
       )}
 
-      {/* MODAL ADICIONAR/EDITAR ATIVO */}
+      {/* ========== MODAL ADICIONAR/EDITAR ATIVO ========== */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }}
+        >
           <div
             className="relative w-full max-w-md p-8 overflow-hidden"
             style={{
@@ -648,10 +533,9 @@ function PortfolioContent() {
               boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
             }}
           >
-            {/* Accent line */}
             <div className="absolute top-0 left-0 right-0" style={{ height: '1px', background: 'linear-gradient(to right, transparent, rgba(0,255,239,0.5), rgba(26,111,212,0.3))' }} />
             <h2 className="text-2xl font-black text-text-primary mb-6">
-              {isEditingAsset ? 'Editar Ativo' : '➕ Adicionar Ativo'}
+              {isEditingAsset ? 'Editar Ativo' : 'Adicionar Ativo'}
             </h2>
 
             <form onSubmit={handleAddAsset} className="space-y-5">
@@ -688,7 +572,7 @@ function PortfolioContent() {
 
               <div>
                 <label className="block text-sm font-semibold text-text-secondary mb-2">
-                  Preço Médio de Compra (USD)
+                  Preco Medio de Compra (USD)
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary font-semibold">$</span>
@@ -726,9 +610,12 @@ function PortfolioContent() {
         </div>
       )}
 
-      {/* MODAL: CONFIRMAR IMPORTAÇÃO ON-CHAIN */}
+      {/* ========== MODAL: CONFIRMAR IMPORTACAO ON-CHAIN ========== */}
       {addingOnChainToken && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in" style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }}
+        >
           <div
             className="relative w-full max-w-md p-8 overflow-hidden"
             style={{
@@ -741,7 +628,7 @@ function PortfolioContent() {
             }}
           >
             <div className="absolute top-0 left-0 right-0" style={{ height: '1px', background: 'linear-gradient(to right, transparent, rgba(0,255,239,0.5), rgba(26,111,212,0.3))' }} />
-            <h2 className="text-2xl font-black text-text-primary mb-6">🔗 Adicionar ao Portfólio</h2>
+            <h2 className="text-2xl font-black text-text-primary mb-6">Adicionar ao Portfolio</h2>
             <div className="space-y-5">
               <div
                 className="p-5 space-y-3"
@@ -762,10 +649,7 @@ function PortfolioContent() {
                 <div>
                   <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1">Quantidade</p>
                   <p className="text-text-primary font-mono">
-                    {addingOnChainToken.amount.toLocaleString('en-US', {
-                      minimumFractionDigits: 4,
-                      maximumFractionDigits: 8,
-                    })}
+                    {addingOnChainToken.amount.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 8 })}
                   </p>
                 </div>
                 <div>
@@ -774,7 +658,7 @@ function PortfolioContent() {
                 </div>
               </div>
               <p className="text-xs text-text-tertiary bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
-                ℹ️ O ativo será adicionado com preço médio $0. Pode editar depois.
+                O ativo sera adicionado com preco medio $0. Pode editar depois.
               </p>
               <div className="flex gap-3 mt-6">
                 <button
