@@ -181,9 +181,55 @@ service cloud.firestore {
     }
 
     // -----------------------------------------------------------------------
+    // Research CMS — /research/{docId}
+    // -----------------------------------------------------------------------
+
+    match /research/{document=**} {
+      // All signed-in users can read published research (tier access enforced client-side)
+      allow read: if isSignedIn();
+      // Only admins can create / update / delete research via AdminResearchTab
+      allow write: if isAdmin();
+    }
+
+    // -----------------------------------------------------------------------
+    // Strategies CMS — /strategies/{strategyId}
+    // -----------------------------------------------------------------------
+
+    match /strategies/{document=**} {
+      // All signed-in users can read strategies (tier access enforced client-side)
+      allow read: if isSignedIn();
+      // Only admins can create / update / delete strategies via AdminStrategyTab
+      allow write: if isAdmin();
+    }
+
+    // -----------------------------------------------------------------------
+    // Model Portfolios CMS — /model_portfolios/{modelId}
+    // -----------------------------------------------------------------------
+
+    match /model_portfolios/{document=**} {
+      // All signed-in users can read model portfolios (tier access enforced client-side)
+      allow read: if isSignedIn();
+      // Only admins can create / update / delete model portfolios via AdminModelPortfolioTab
+      allow write: if isAdmin();
+    }
+
+    // -----------------------------------------------------------------------
+    // Recommendations — /recommendations/{recId}
+    // -----------------------------------------------------------------------
+
+    match /recommendations/{document=**} {
+      // Admins can read all recommendations
+      allow read: if isAdmin();
+      // Assessors can read recommendations they created (createdBy field)
+      // Users can read recommendations targeted to them
+      // This is simplified for MVP; client-side filtering recommended
+      // Only admins and assessors can create / update / delete
+      allow write: if isAdmin() || isAssessor();
+    }
+
+    // -----------------------------------------------------------------------
     // Deny all other access by default
-    // /strategies, /model_portfolios, /research, /recommendations, and any
-    // future collections are blocked until explicit rules are added.
+    // Any other collections not explicitly defined above are blocked.
     // -----------------------------------------------------------------------
 
     match /{document=**} {
