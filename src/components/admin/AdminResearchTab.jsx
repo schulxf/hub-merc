@@ -48,12 +48,12 @@ export default function AdminResearchTab({ onError }) {
       },
       (error) => {
         console.error('Erro ao carregar pesquisas:', error);
-        onError('Erro ao carregar documentos de pesquisa');
+        if (onError) onError('Erro ao carregar documentos de pesquisa');
         setLoadingResearch(false);
       }
     );
     return () => unsubscribe();
-  }, [onError]);
+  }, []);
 
   const handleSelectResearch = (item) => {
     setEditingId(item.firestoreId);

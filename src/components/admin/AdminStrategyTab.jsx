@@ -49,12 +49,12 @@ export default function AdminStrategyTab({ onError }) {
       },
       (error) => {
         console.error('Erro ao carregar estratégias:', error);
-        onError('Erro ao carregar estratégias de investimento');
+        if (onError) onError('Erro ao carregar estratégias de investimento');
         setLoadingStrategies(false);
       }
     );
     return () => unsubscribe();
-  }, [onError]);
+  }, []);
 
   const handleSelectStrategy = (item) => {
     setEditingId(item.firestoreId);

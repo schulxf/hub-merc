@@ -85,12 +85,12 @@ export default function AdminRecommendationsTab({ onError = () => {} }) {
       },
       (error) => {
         console.error('Error loading recommendations:', error);
-        onError(`Erro ao carregar recomendações: ${error.message}`);
+        if (onError) onError(`Erro ao carregar recomendações: ${error.message}`);
         setLoadingRecs(false);
       }
     );
     return () => unsubscribe();
-  }, [onError]);
+  }, []);
 
   const validateForm = () => {
     if (!recForm.type) return 'Selecione um tipo de recomendação';

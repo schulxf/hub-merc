@@ -51,12 +51,12 @@ export default function AdminModelPortfolioTab({ onError }) {
       },
       (error) => {
         console.error('Erro ao carregar portfólios modelo:', error);
-        onError('Erro ao carregar portfólios modelo');
+        if (onError) onError('Erro ao carregar portfólios modelo');
         setLoadingPortfolios(false);
       }
     );
     return () => unsubscribe();
-  }, [onError]);
+  }, []);
 
   const handleSelectPortfolio = (item) => {
     setEditingId(item.firestoreId);
