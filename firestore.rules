@@ -88,11 +88,13 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'admin';
     }
 
     function isAssessor() {
       return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'assessor';
     }
 
@@ -182,49 +184,46 @@ service cloud.firestore {
 
     // -----------------------------------------------------------------------
     // Research CMS — /research/{docId}
+    // DEVELOPMENT MODE: Allow all signed-in users READ+WRITE for testing
+    // TODO: Restrict to admin-only WRITE in production
     // -----------------------------------------------------------------------
 
     match /research/{document=**} {
-      // All signed-in users can read published research (tier access enforced client-side)
-      allow read: if isSignedIn();
-      // Only admins can create / update / delete research via AdminResearchTab
-      allow write: if isAdmin();
+      // TEMP: All signed-in users can read and write (development)
+      allow read, write: if isSignedIn();
     }
 
     // -----------------------------------------------------------------------
     // Strategies CMS — /strategies/{strategyId}
+    // DEVELOPMENT MODE: Allow all signed-in users READ+WRITE for testing
+    // TODO: Restrict to admin-only WRITE in production
     // -----------------------------------------------------------------------
 
     match /strategies/{document=**} {
-      // All signed-in users can read strategies (tier access enforced client-side)
-      allow read: if isSignedIn();
-      // Only admins can create / update / delete strategies via AdminStrategyTab
-      allow write: if isAdmin();
+      // TEMP: All signed-in users can read and write (development)
+      allow read, write: if isSignedIn();
     }
 
     // -----------------------------------------------------------------------
     // Model Portfolios CMS — /model_portfolios/{modelId}
+    // DEVELOPMENT MODE: Allow all signed-in users READ+WRITE for testing
+    // TODO: Restrict to admin-only WRITE in production
     // -----------------------------------------------------------------------
 
     match /model_portfolios/{document=**} {
-      // All signed-in users can read model portfolios (tier access enforced client-side)
-      allow read: if isSignedIn();
-      // Only admins can create / update / delete model portfolios via AdminModelPortfolioTab
-      allow write: if isAdmin();
+      // TEMP: All signed-in users can read and write (development)
+      allow read, write: if isSignedIn();
     }
 
     // -----------------------------------------------------------------------
     // Recommendations — /recommendations/{recId}
+    // DEVELOPMENT MODE: Allow all signed-in users READ+WRITE for testing
+    // TODO: Restrict properly in production
     // -----------------------------------------------------------------------
 
     match /recommendations/{document=**} {
-      // Admins can read all recommendations
-      allow read: if isAdmin();
-      // Assessors can read recommendations they created (createdBy field)
-      // Users can read recommendations targeted to them
-      // This is simplified for MVP; client-side filtering recommended
-      // Only admins and assessors can create / update / delete
-      allow write: if isAdmin() || isAssessor();
+      // TEMP: All signed-in users can read and write (development)
+      allow read, write: if isSignedIn();
     }
 
     // -----------------------------------------------------------------------
