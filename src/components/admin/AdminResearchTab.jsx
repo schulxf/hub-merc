@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FileText, Plus, Trash2, Save, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -32,9 +32,13 @@ export default function AdminResearchTab({ onError }) {
   const [selectedResearchId, setSelectedResearchId] = useState(null);
   const [isSavingResearch, setIsSavingResearch] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const unsubscribeRef = useRef(null);
 
   // Fetch all research documents
   useEffect(() => {
+    // Prevent duplicate listener setup (React StrictMode compatibility)
+    if (unsubscribeRef.current) return;
+
     const researchColl = collection(db, 'research');
     const unsubscribe = onSnapshot(
       researchColl,
@@ -52,7 +56,15 @@ export default function AdminResearchTab({ onError }) {
         setLoadingResearch(false);
       }
     );
-    return () => unsubscribe();
+
+    unsubscribeRef.current = unsubscribe;
+
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+    };
   }, []);
 
   const handleSelectResearch = (item) => {

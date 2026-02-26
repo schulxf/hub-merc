@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TrendingUp, Plus, Trash2, Save, Loader2 } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -33,9 +33,13 @@ export default function AdminStrategyTab({ onError }) {
   const [selectedStrategyId, setSelectedStrategyId] = useState(null);
   const [isSavingStrategy, setIsSavingStrategy] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const unsubscribeRef = useRef(null);
 
   // Fetch all strategies
   useEffect(() => {
+    // Prevent duplicate listener setup (React StrictMode compatibility)
+    if (unsubscribeRef.current) return;
+
     const strategiesColl = collection(db, 'strategies');
     const unsubscribe = onSnapshot(
       strategiesColl,
@@ -53,7 +57,15 @@ export default function AdminStrategyTab({ onError }) {
         setLoadingStrategies(false);
       }
     );
-    return () => unsubscribe();
+
+    unsubscribeRef.current = unsubscribe;
+
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+    };
   }, []);
 
   const handleSelectStrategy = (item) => {

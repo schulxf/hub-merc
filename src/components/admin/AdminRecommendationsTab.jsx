@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   collection,
   onSnapshot,
@@ -62,9 +62,13 @@ export default function AdminRecommendationsTab({ onError = () => {} }) {
   const [editingId, setEditingId] = useState(null);
   const [saveLoading, setSaveLoading] = useState(false);
   const [jsonError, setJsonError] = useState('');
+  const unsubscribeRef = useRef(null);
 
   // Real-time sync from Firestore
   useEffect(() => {
+    // Prevent duplicate listener setup (React StrictMode compatibility)
+    if (unsubscribeRef.current) return;
+
     const coll = collection(db, 'recommendations');
     const unsubscribe = onSnapshot(
       coll,
@@ -89,7 +93,15 @@ export default function AdminRecommendationsTab({ onError = () => {} }) {
         setLoadingRecs(false);
       }
     );
-    return () => unsubscribe();
+
+    unsubscribeRef.current = unsubscribe;
+
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+    };
   }, []);
 
   const validateForm = () => {

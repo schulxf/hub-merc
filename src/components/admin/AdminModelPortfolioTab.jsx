@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Wallet, Plus, Trash2, Save, Loader2 } from 'lucide-react';
 import { db } from '../../lib/firebase';
 import { collection, onSnapshot, doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -35,9 +35,13 @@ export default function AdminModelPortfolioTab({ onError }) {
   const [selectedPortfolioId, setSelectedPortfolioId] = useState(null);
   const [isSavingPortfolio, setIsSavingPortfolio] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const unsubscribeRef = useRef(null);
 
   // Fetch all model portfolios
   useEffect(() => {
+    // Prevent duplicate listener setup (React StrictMode compatibility)
+    if (unsubscribeRef.current) return;
+
     const portfoliosColl = collection(db, 'model_portfolios');
     const unsubscribe = onSnapshot(
       portfoliosColl,
@@ -55,7 +59,15 @@ export default function AdminModelPortfolioTab({ onError }) {
         setLoadingPortfolios(false);
       }
     );
-    return () => unsubscribe();
+
+    unsubscribeRef.current = unsubscribe;
+
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
+      }
+    };
   }, []);
 
   const handleSelectPortfolio = (item) => {
