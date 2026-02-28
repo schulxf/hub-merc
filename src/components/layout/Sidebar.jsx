@@ -18,10 +18,9 @@ export const MENU_CATEGORIES = [
     label: 'PRO',
     icon: Briefcase,
     items: [
-      { id: 'portfolio', label: 'Portfólio', icon: PieChart, permKey: 'portfolio' },
+      { id: 'portfolio', label: 'Portfólio Pessoal', icon: PieChart, permKey: 'portfolio' },
+      { id: 'carteiras-recomendadas', label: 'Carteiras Recomendadas', icon: Star, permKey: 'portfolio' },
       { id: 'ia-copilot', label: 'Assistente IA', icon: Brain, permKey: 'portfolio' },
-      { id: 'analises', label: 'Análises', icon: Activity, isMock: true, permKey: 'portfolio' },
-      { id: 'carteiras-recomendadas', label: 'Carteiras', icon: Star, isMock: true, permKey: 'portfolio' },
     ]
   },
   {
@@ -29,43 +28,34 @@ export const MENU_CATEGORIES = [
     label: 'DeFi',
     icon: Zap,
     items: [
-      { id: 'airdrops', label: 'Hub de Airdrops', icon: LayoutGrid, permKey: 'airdrops' },
+      { id: 'defi-positions', label: 'Portfólio DeFi', icon: PieChart, permKey: 'defi' },
+      { id: 'defi-guides', label: 'Guias de DeFi', icon: BookOpen, permKey: 'defi' },
+      { id: 'airdrops', label: 'Guias de Airdrop', icon: LayoutGrid, permKey: 'airdrops' },
       { id: 'defi-tools', label: 'Ferramentas DeFi', icon: ArrowRightLeft, permKey: 'defi' },
-      { id: 'defi-positions', label: 'Posições DeFi', icon: Layers, permKey: 'defi' },
-      { id: 'reminders', label: 'Trackers e Agenda', icon: Bell, permKey: 'reminders' },
     ]
   },
   {
-    id: 'conteudo',
-    label: 'Conteúdo',
+    id: 'educacao',
+    label: 'EDUCAÇÃO',
     icon: BookOpen,
     items: [
       { id: 'research', label: 'Pesquisas', icon: Book, permKey: 'free' },
       { id: 'strategies', label: 'Estratégias', icon: TrendingUp, permKey: 'free' },
-      { id: 'portfolios', label: 'Carteiras Modelo', icon: Briefcase, permKey: 'free' },
       { id: 'recommendations', label: 'Recomendações', icon: Lightbulb, permKey: 'free' },
+      { id: 'academia', label: 'Academia DeFi', icon: Video, permKey: 'free' },
     ]
   },
   {
-    id: 'vip-consulting',
-    label: 'VIP Consulting',
-    icon: Crown,
-    permKey: 'vip',
+    id: 'ferramentas',
+    label: 'FERRAMENTAS',
+    icon: Layers,
     items: [
-      { id: 'insights', label: 'Insights Exclusivos', icon: Sparkles, permKey: 'vip' },
-      { id: 'academia', label: 'Academia DeFi', icon: Video, permKey: 'vip' },
+      { id: 'reminders', label: 'Trackers & Agenda', icon: Bell, permKey: 'reminders' },
     ]
-  },
-  {
-    id: 'cursos',
-    label: 'Cursos',
-    icon: GraduationCap,
-    isMock: true,
-    permKey: 'free'
   },
   {
     id: 'suporte',
-    label: 'Suporte',
+    label: 'SUPORTE',
     icon: LifeBuoy,
     isMock: true,
     permKey: 'free'

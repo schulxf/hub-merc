@@ -35,6 +35,10 @@ const RecommendationsFeed = lazy(() => import('../../pages/RecommendationsFeed')
 const InsightsFeed = lazy(() => import('../../pages/InsightsFeed'));
 const VideoLibrary = lazy(() => import('../../pages/VideoLibrary'));
 
+// Importações para DeFi Guides (PHASE 5 novo)
+const DeFiGuidesHub = lazy(() => import('../../pages/DeFiGuidesHub'));
+const DeFiGuideDetail = lazy(() => import('../../pages/DeFiGuideDetail'));
+
 // Fallback de loading para Suspense
 const PageLoader = () => (
   <div className="flex items-center justify-center py-20">
@@ -66,7 +70,7 @@ const DashboardLayout = () => {
   const [currentRoute, setCurrentRoute] = useState('dashboard');
   const [selectedAirdrop, setSelectedAirdrop] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [expandedMenus, setExpandedMenus] = useState({ pro: true, defi: true });
+  const [expandedMenus, setExpandedMenus] = useState({ pro: true, defi: true, educacao: false, ferramentas: false });
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   // VIP Consulting states (PHASE 4 novo)
@@ -164,16 +168,22 @@ const DashboardLayout = () => {
     const map = {
       'dashboard': 'free',
       'portfolio': 'portfolio',
-      'carteiras-pro': 'portfolio',
-      'analises': 'portfolio',
+      'carteiras-recomendadas': 'portfolio',
+      'ia-copilot': 'portfolio',
+      'defi-positions': 'defi',
+      'defi-guides': 'defi',
       'airdrops': 'airdrops',
       'airdrop-detail': 'airdrops',
-      'defi-positions': 'defi',
       'defi-tools': 'defi',
       'reminders': 'reminders',
-      'carteiras-recomendadas': 'portfolio',
+      'research': 'free',
+      'research-detail': 'free',
+      'strategies': 'free',
+      'portfolios': 'free',
+      'recommendations': 'free',
+      'academia': 'free',
       'assessor': 'free',
-      'ia-copilot': 'portfolio'
+      'insights': 'vip'
     };
     return map[currentRoute] || 'free';
   };
@@ -318,18 +328,25 @@ const DashboardLayout = () => {
               {currentRoute === 'assessor' && <AssessorDashboard />}
               {currentRoute === 'ia-copilot' && <AiCopilot />}
 
-              {/* PHASE 3: Consumer Pages */}
+              {/* DEFI Pages */}
+              {currentRoute === 'defi-positions' && <DeFiPositions />}
+              {currentRoute === 'defi-guides' && <DeFiGuidesHub />}
+              {currentRoute === 'airdrops' && <AirdropHub onSelect={openAirdrop} />}
+              {currentRoute === 'airdrop-detail' && selectedAirdrop && <AirdropRouter airdrop={selectedAirdrop} onBack={() => navigateTo('airdrops')} />}
+              {currentRoute === 'defi-tools' && <DeFiToolsLanding />}
+
+              {/* EDUCACAO Pages */}
               {currentRoute === 'research' && <ResearchHub />}
               {currentRoute === 'research-detail' && <ResearchDetail />}
               {currentRoute === 'strategies' && <StrategiesMarketplace />}
               {currentRoute === 'portfolios' && <ModelPortfoliosPage />}
               {currentRoute === 'recommendations' && <RecommendationsFeed />}
-
-              {/* PHASE 4: VIP Consulting Pages */}
-              {currentRoute === 'insights' && <InsightsFeed />}
               {currentRoute === 'academia' && <VideoLibrary />}
 
-              {['analises', 'suporte', 'carteiras-recomendadas'].includes(currentRoute) && (
+              {/* PHASE 4: VIP Consulting Pages (hidden from menu) */}
+              {currentRoute === 'insights' && <InsightsFeed />}
+
+              {['analises', 'suporte'].includes(currentRoute) && (
                 <MockPage title={getRouteTitle(currentRoute)} />
               )}
             </>
