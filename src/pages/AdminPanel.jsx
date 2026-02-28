@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, Save, Loader2, Search, CheckCircle2, Crown, AlertTriangle, Calendar, Plus, Trash2 } from 'lucide-react';
+import { Users, Shield, Save, Loader2, Search, CheckCircle2, Crown, AlertTriangle, Calendar, Plus, Trash2, Newspaper, GraduationCap, BarChart2 } from 'lucide-react';
 
 import { db } from '../lib/firebase';
-import { collection, onSnapshot, doc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, setDoc, addDoc, deleteDoc, getDocs, getDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState('users');
@@ -27,6 +27,21 @@ export default function AdminPanel() {
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [eventForm, setEventForm] = useState({ title: '', date: '', type: 'tge', relatedAirdropId: '' });
   const [isSavingEvent, setIsSavingEvent] = useState(false);
+
+  // Estados para Insights (Feed Institucional)
+  const [insights, setInsights] = useState([]);
+  const [insightForm, setInsightForm] = useState({ titulo: '', corpo: '', categoria: 'Giro Diário' });
+  const [isSavingInsight, setIsSavingInsight] = useState(false);
+
+  // Estados para Academia (Vídeos DeFi)
+  const [videos, setVideos] = useState([]);
+  const [videoForm, setVideoForm] = useState({ titulo: '', descricao: '', url: '', categoria: 'Protocolos DeFi' });
+  const [isSavingVideo, setIsSavingVideo] = useState(false);
+
+  // Estados para Assessores
+  const [assessors, setAssessors] = useState([]);
+  const [clientUidInput, setClientUidInput] = useState({});
+  const [isSavingAssessor, setIsSavingAssessor] = useState(false);
 
   // 1. Buscar todos os usuários do Firebase
   useEffect(() => {
@@ -139,6 +154,135 @@ export default function AdminPanel() {
     }
   };
 
+  // Buscar insights
+  useEffect(() => {
+    const postsRef = collection(db, 'public_content', 'insights', 'posts');
+    const unsubscribe = onSnapshot(postsRef, (snap) => {
+      const data = [];
+      snap.forEach(d => data.push({ id: d.id, ...d.data() }));
+      data.sort((a, b) => (b.publishedAt?.seconds || 0) - (a.publishedAt?.seconds || 0));
+      setInsights(data);
+    }, () => {});
+    return () => unsubscribe();
+  }, []);
+
+  // Buscar vídeos da academia
+  useEffect(() => {
+    const videosRef = collection(db, 'public_content', 'academy', 'videos');
+    const unsubscribe = onSnapshot(videosRef, (snap) => {
+      const data = [];
+      snap.forEach(d => data.push({ id: d.id, ...d.data() }));
+      setVideos(data);
+    }, () => {});
+    return () => unsubscribe();
+  }, []);
+
+  // Filtrar assessores da lista de users
+  useEffect(() => {
+    setAssessors(users.filter(u => u.tier === 'assessor'));
+  }, [users]);
+
+  // Handler: publicar insight
+  const handlePublishInsight = async (e) => {
+    e.preventDefault();
+    if (!insightForm.titulo || !insightForm.corpo) return;
+    setIsSavingInsight(true);
+    try {
+      const postsRef = collection(db, 'public_content', 'insights', 'posts');
+      await addDoc(postsRef, {
+        ...insightForm,
+        publishedAt: new Date(),
+        authorName: 'Equipa Mercurius',
+      });
+      setInsightForm({ titulo: '', corpo: '', categoria: 'Giro Diário' });
+    } catch (err) {
+      console.error('Erro ao publicar insight:', err);
+      setActionError('Erro ao publicar insight.');
+      setTimeout(() => setActionError(''), 3000);
+    } finally {
+      setIsSavingInsight(false);
+    }
+  };
+
+  // Handler: apagar insight
+  const handleDeleteInsight = async (postId) => {
+    try {
+      await deleteDoc(doc(db, 'public_content', 'insights', 'posts', postId));
+    } catch (err) {
+      console.error('Erro ao apagar insight:', err);
+    }
+  };
+
+  // Handler: publicar vídeo
+  const handlePublishVideo = async (e) => {
+    e.preventDefault();
+    if (!videoForm.titulo || !videoForm.url) return;
+    setIsSavingVideo(true);
+    try {
+      const videosRef = collection(db, 'public_content', 'academy', 'videos');
+      await addDoc(videosRef, { ...videoForm, createdAt: new Date() });
+      setVideoForm({ titulo: '', descricao: '', url: '', categoria: 'Protocolos DeFi' });
+    } catch (err) {
+      console.error('Erro ao publicar vídeo:', err);
+      setActionError('Erro ao publicar vídeo.');
+      setTimeout(() => setActionError(''), 3000);
+    } finally {
+      setIsSavingVideo(false);
+    }
+  };
+
+  // Handler: apagar vídeo
+  const handleDeleteVideo = async (videoId) => {
+    try {
+      await deleteDoc(doc(db, 'public_content', 'academy', 'videos', videoId));
+    } catch (err) {
+      console.error('Erro ao apagar vídeo:', err);
+    }
+  };
+
+  // Handler: adicionar cliente a assessor
+  const handleAddClientToAssessor = async (assessorId) => {
+    const clientUid = (clientUidInput[assessorId] || '').trim();
+    if (!clientUid) return;
+    setIsSavingAssessor(true);
+    try {
+      // Add clientUid to assessor's clients array
+      await updateDoc(doc(db, 'users', assessorId), { clients: arrayUnion(clientUid) });
+      // Add assessorId to client's profile.assessorIds
+      const profileRef = doc(db, 'users', clientUid, 'profile', 'data');
+      const profileSnap = await getDoc(profileRef);
+      if (profileSnap.exists()) {
+        await updateDoc(profileRef, { [`assessorIds.${assessorId}`]: true });
+      } else {
+        await setDoc(profileRef, { assessorIds: { [assessorId]: true } });
+      }
+      setClientUidInput(prev => ({ ...prev, [assessorId]: '' }));
+    } catch (err) {
+      console.error('Erro ao adicionar cliente ao assessor:', err);
+      setActionError('Erro ao adicionar cliente. Verifique o UID.');
+      setTimeout(() => setActionError(''), 3000);
+    } finally {
+      setIsSavingAssessor(false);
+    }
+  };
+
+  // Handler: remover cliente de assessor
+  const handleRemoveClientFromAssessor = async (assessorId, clientUid) => {
+    setIsSavingAssessor(true);
+    try {
+      await updateDoc(doc(db, 'users', assessorId), { clients: arrayRemove(clientUid) });
+      const profileRef = doc(db, 'users', clientUid, 'profile', 'data');
+      const profileSnap = await getDoc(profileRef);
+      if (profileSnap.exists()) {
+        await updateDoc(profileRef, { [`assessorIds.${assessorId}`]: false });
+      }
+    } catch (err) {
+      console.error('Erro ao remover cliente:', err);
+    } finally {
+      setIsSavingAssessor(false);
+    }
+  };
+
   const filteredUsers = users.filter(u =>
     u.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -185,6 +329,30 @@ export default function AdminPanel() {
           }`}
         >
           <Calendar className="w-4 h-4" /> Agenda Global
+        </button>
+        <button
+          onClick={() => setActiveTab('insights')}
+          className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-colors outline-none ${
+            activeTab === 'insights' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-300'
+          }`}
+        >
+          <Newspaper className="w-4 h-4" /> Insights
+        </button>
+        <button
+          onClick={() => setActiveTab('academia')}
+          className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-colors outline-none ${
+            activeTab === 'academia' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-300'
+          }`}
+        >
+          <GraduationCap className="w-4 h-4" /> Academia
+        </button>
+        <button
+          onClick={() => setActiveTab('assessores')}
+          className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-colors outline-none ${
+            activeTab === 'assessores' ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-300'
+          }`}
+        >
+          <BarChart2 className="w-4 h-4" /> Assessores
         </button>
       </div>
 
@@ -321,6 +489,266 @@ export default function AdminPanel() {
                <strong>Atenção:</strong> Ao clicar em salvar, os usuários que estiverem com o Hub aberto terão as telas bloqueadas ou desbloqueadas instantaneamente, sem precisarem recarregar a página.
              </p>
           </div>
+        </div>
+      )}
+
+      {/* TAB 4: INSIGHTS */}
+      {activeTab === 'insights' && (
+        <div className="max-w-3xl space-y-6">
+          <div className="bg-[#111] border border-gray-800 rounded-2xl p-6 shadow-xl">
+            <h3 className="text-xl font-bold text-white mb-2">Publicar Insight</h3>
+            <p className="text-sm text-gray-400 mb-6">O post ficará visível imediatamente para todos os clientes VIP no feed de Insights.</p>
+            <form onSubmit={handlePublishInsight} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Título</label>
+                <input
+                  type="text"
+                  required
+                  value={insightForm.titulo}
+                  onChange={e => setInsightForm({ ...insightForm, titulo: e.target.value })}
+                  className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500"
+                  placeholder="Ex: Giro de Mercado — 27 Fev"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Categoria</label>
+                <select
+                  value={insightForm.categoria}
+                  onChange={e => setInsightForm({ ...insightForm, categoria: e.target.value })}
+                  className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500"
+                >
+                  <option>Giro Diário</option>
+                  <option>Relatório Semanal</option>
+                  <option>Flash de Mercado</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Corpo</label>
+                <textarea
+                  required
+                  rows={6}
+                  value={insightForm.corpo}
+                  onChange={e => setInsightForm({ ...insightForm, corpo: e.target.value })}
+                  className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 resize-none"
+                  placeholder="Escreva a análise de mercado aqui..."
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isSavingInsight}
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50 outline-none"
+              >
+                {isSavingInsight ? <Loader2 className="w-5 h-5 animate-spin" /> : <Newspaper className="w-5 h-5" />}
+                Publicar Insight
+              </button>
+            </form>
+          </div>
+
+          <div className="bg-[#111] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-6 border-b border-gray-800">
+              <h3 className="text-lg font-bold text-white">Insights Publicados ({insights.length})</h3>
+            </div>
+            <div className="divide-y divide-gray-800/50">
+              {insights.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <Newspaper className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p>Nenhum insight publicado ainda.</p>
+                </div>
+              ) : (
+                insights.map(post => (
+                  <div key={post.id} className="flex items-start justify-between px-6 py-4 gap-4 hover:bg-white/[0.02] transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[11px] font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">{post.categoria}</span>
+                      </div>
+                      <p className="font-bold text-white text-sm truncate">{post.titulo}</p>
+                      <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{post.corpo}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteInsight(post.id)}
+                      className="text-gray-600 hover:text-red-400 p-2 transition-colors outline-none flex-shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: ACADEMIA */}
+      {activeTab === 'academia' && (
+        <div className="max-w-3xl space-y-6">
+          <div className="bg-[#111] border border-gray-800 rounded-2xl p-6 shadow-xl">
+            <h3 className="text-xl font-bold text-white mb-2">Adicionar Vídeo</h3>
+            <p className="text-sm text-gray-400 mb-6">Adicione screencasts e tutoriais DeFi para os clientes VIP.</p>
+            <form onSubmit={handlePublishVideo} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Título</label>
+                  <input
+                    type="text"
+                    required
+                    value={videoForm.titulo}
+                    onChange={e => setVideoForm({ ...videoForm, titulo: e.target.value })}
+                    className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500"
+                    placeholder="Ex: Como fazer Supply na Aave"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Categoria</label>
+                  <select
+                    value={videoForm.categoria}
+                    onChange={e => setVideoForm({ ...videoForm, categoria: e.target.value })}
+                    className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500"
+                  >
+                    <option>Protocolos DeFi</option>
+                    <option>Gestão de Risco</option>
+                    <option>Ferramentas</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">URL do YouTube</label>
+                <input
+                  type="url"
+                  required
+                  value={videoForm.url}
+                  onChange={e => setVideoForm({ ...videoForm, url: e.target.value })}
+                  className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500"
+                  placeholder="https://youtube.com/watch?v=..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-400 mb-1">Descrição (opcional)</label>
+                <input
+                  type="text"
+                  value={videoForm.descricao}
+                  onChange={e => setVideoForm({ ...videoForm, descricao: e.target.value })}
+                  className="w-full bg-[#0a0a0a] border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500"
+                  placeholder="Breve descrição do que é ensinado no vídeo"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isSavingVideo}
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center gap-2 disabled:opacity-50 outline-none"
+              >
+                {isSavingVideo ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                Adicionar Vídeo
+              </button>
+            </form>
+          </div>
+
+          <div className="bg-[#111] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="p-6 border-b border-gray-800">
+              <h3 className="text-lg font-bold text-white">Vídeos na Academia ({videos.length})</h3>
+            </div>
+            <div className="divide-y divide-gray-800/50">
+              {videos.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <GraduationCap className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p>Nenhum vídeo adicionado ainda.</p>
+                </div>
+              ) : (
+                videos.map(v => (
+                  <div key={v.id} className="flex items-center justify-between px-6 py-4 gap-4 hover:bg-white/[0.02] transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[11px] font-bold text-yellow-400 bg-yellow-500/10 px-2 py-0.5 rounded-full">{v.categoria}</span>
+                      </div>
+                      <p className="font-bold text-white text-sm truncate">{v.titulo}</p>
+                      <p className="text-xs text-gray-500 truncate">{v.url}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteVideo(v.id)}
+                      className="text-gray-600 hover:text-red-400 p-2 transition-colors outline-none flex-shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 6: ASSESSORES */}
+      {activeTab === 'assessores' && (
+        <div className="max-w-3xl space-y-6">
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-blue-300">
+              Para criar um Assessor: primeiro mude o tier do utilizador para <strong>Assessor</strong> no tab "Gestão de Clientes". Depois, atribua-lhe clientes VIP aqui.
+            </p>
+          </div>
+
+          {assessors.length === 0 ? (
+            <div className="bg-[#111] border border-gray-800 rounded-2xl p-12 text-center">
+              <BarChart2 className="w-12 h-12 text-gray-700 mx-auto mb-4" />
+              <p className="text-gray-400">Nenhum Assessor encontrado.</p>
+              <p className="text-gray-500 text-sm mt-1">Mude o tier de um utilizador para "Assessor" no tab Gestão de Clientes.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {assessors.map(assessor => (
+                <div key={assessor.id} className="bg-[#111] border border-gray-800 rounded-2xl p-6 shadow-xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-500/30 flex items-center justify-center font-bold text-blue-400 text-sm uppercase">
+                      {assessor.email?.[0] || 'A'}
+                    </div>
+                    <div>
+                      <p className="font-bold text-white">{assessor.email}</p>
+                      <p className="text-xs text-blue-400">Assessor • {(assessor.clients || []).length} clientes</p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Clientes Atribuídos</p>
+                    {(assessor.clients || []).length === 0 ? (
+                      <p className="text-xs text-gray-600">Nenhum cliente atribuído.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {(assessor.clients || []).map(uid => (
+                          <div key={uid} className="flex items-center justify-between bg-[#0a0a0a] border border-gray-800 rounded-lg px-3 py-2">
+                            <span className="text-xs font-mono text-gray-400 truncate">{uid}</span>
+                            <button
+                              onClick={() => handleRemoveClientFromAssessor(assessor.id, uid)}
+                              disabled={isSavingAssessor}
+                              className="text-gray-600 hover:text-red-400 p-1 transition-colors outline-none flex-shrink-0"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="UID do cliente (ex: abc123...)"
+                      value={clientUidInput[assessor.id] || ''}
+                      onChange={e => setClientUidInput(prev => ({ ...prev, [assessor.id]: e.target.value }))}
+                      className="flex-1 bg-[#0a0a0a] border border-gray-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500 font-mono"
+                    />
+                    <button
+                      onClick={() => handleAddClientToAssessor(assessor.id)}
+                      disabled={isSavingAssessor || !clientUidInput[assessor.id]}
+                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm flex items-center gap-2 disabled:opacity-50 outline-none"
+                    >
+                      {isSavingAssessor ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      Adicionar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

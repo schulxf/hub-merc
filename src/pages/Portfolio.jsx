@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  PieChart,
+  PieChart as PieChartIcon,
   Plus,
   Trash2,
   TrendingUp,
@@ -11,12 +11,17 @@ import {
   AlertCircle,
   RefreshCw,
   MoreHorizontal,
+  Eye,
+  EyeOff,
+  Sparkles,
 } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { db, auth } from '../lib/firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query } from 'firebase/firestore';
 import { useWalletBalances } from '../hooks/useWalletBalances';
 import { useWallets } from '../hooks/useWallets';
 import { useCryptoPrices } from '../hooks/useCryptoPrices';
+import { useUserProfile } from '../hooks/useUserProfile';
 import { SUPPORTED_COINS } from '../data/mockDb';
 import { lookupCoinGeckoId } from '../lib/web3Api';
 
@@ -28,6 +33,18 @@ export default function Portfolio() {
   const [syncTrigger, setSyncTrigger] = useState(null);
   const [localSyncWarning, setLocalSyncWarning] = useState('');
   const [showCharts, setShowCharts] = useState(true);
+  const [zenMode, setZenMode] = useState(() => localStorage.getItem('mercurius_zen_mode') === 'true');
+
+  const { profile } = useUserProfile();
+  const canUseZen = profile?.tier === 'vip' || profile?.tier === 'admin' || profile?.tier === 'assessor';
+
+  const toggleZen = () => {
+    setZenMode(prev => {
+      const next = !prev;
+      localStorage.setItem('mercurius_zen_mode', String(next));
+      return next;
+    });
+  };
 
   const {
     tokens: onChainTokens,
@@ -264,6 +281,36 @@ export default function Portfolio() {
     };
   }, [portfolioAssets, livePrices]);
 
+  // Ecosystem lookup for Zen Mode donut chart
+  const ECOSYSTEM_MAP = {
+    bitcoin: { name: 'Bitcoin', color: '#F7931A' },
+    ethereum: { name: 'Ethereum', color: '#627EEA' },
+    solana: { name: 'Solana', color: '#9945FF' },
+    'avalanche-2': { name: 'Avalanche', color: '#E84142' },
+    binancecoin: { name: 'BNB Chain', color: '#F0B90B' },
+    'matic-network': { name: 'Polygon', color: '#8247E5' },
+    chainlink: { name: 'Chainlink', color: '#2A5ADA' },
+    tether: { name: 'Stablecoins', color: '#26A17B' },
+    'usd-coin': { name: 'Stablecoins', color: '#26A17B' },
+    dai: { name: 'Stablecoins', color: '#26A17B' },
+    arbitrum: { name: 'Arbitrum', color: '#28A0F0' },
+    optimism: { name: 'Optimism', color: '#FF0420' },
+  };
+
+  const ecosystemData = useMemo(() => {
+    const ecosystems = {};
+    portfolioStats.enrichedAssets.forEach(asset => {
+      const eco = ECOSYSTEM_MAP[asset.coinId] || { name: 'EVM Alts', color: '#6366F1' };
+      if (!ecosystems[eco.name]) {
+        ecosystems[eco.name] = { name: eco.name, value: 0, color: eco.color };
+      }
+      ecosystems[eco.name].value += asset.currentValue;
+    });
+    return Object.values(ecosystems)
+      .filter(e => e.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [portfolioStats.enrichedAssets]);
+
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[400px]">
@@ -280,7 +327,7 @@ export default function Portfolio() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-2xl bg-blue-500/10 border border-blue-500/40 flex items-center justify-center">
-                <PieChart className="w-4 h-4 text-blue-400" />
+                <PieChartIcon className="w-4 h-4 text-blue-400" />
               </div>
               <div>
                 <p className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">
@@ -338,7 +385,7 @@ export default function Portfolio() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-              <PieChart className="w-8 h-8 text-blue-500" />
+              <PieChartIcon className="w-8 h-8 text-blue-500" />
               Meu Portfólio
             </h1>
             <div className="flex items-center gap-4">
@@ -381,19 +428,36 @@ export default function Portfolio() {
             >
               <Plus className="w-4 h-4" /> Adicionar transação
             </button>
+            {canUseZen && (
+              <button
+                type="button"
+                onClick={toggleZen}
+                className={`px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border outline-none focus:ring-2 focus:ring-yellow-500 select-none ${
+                  zenMode
+                    ? 'bg-yellow-500/10 border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/20'
+                    : 'bg-[#111] border-gray-700 text-gray-100 hover:bg-[#181818]'
+                }`}
+                title="Vista Zen VIP — sem ruído diário"
+              >
+                <Sparkles className="w-4 h-4" />
+                {zenMode ? 'Vista Zen' : 'Vista Zen'}
+              </button>
+            )}
             <button
               type="button"
               className="bg-[#111] hover:bg-[#181818] text-gray-100 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 select-none"
             >
               Export
             </button>
-            <button
-              type="button"
-              onClick={() => setShowCharts((prev) => !prev)}
-              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 select-none"
-            >
-              {showCharts ? 'Ocultar gráficos' : 'Mostrar gráficos'}
-            </button>
+            {!zenMode && (
+              <button
+                type="button"
+                onClick={() => setShowCharts((prev) => !prev)}
+                className="bg-[#111] hover:bg-[#181818] text-gray-100 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 select-none"
+              >
+                {showCharts ? 'Ocultar gráficos' : 'Mostrar gráficos'}
+              </button>
+            )}
             <button
               type="button"
               className="bg-[#111] hover:bg-[#181818] text-gray-400 px-3 py-2.5 rounded-xl transition-colors border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 select-none flex items-center justify-center"
@@ -403,6 +467,7 @@ export default function Portfolio() {
           </div>
         </div>
 
+        {/* AUM DISPLAY — Zen: só total limpo; Normal: total + variação 24h */}
         <div className="mb-6">
           <p className="text-xs text-gray-400 mb-1">Valor total</p>
           <div className="flex flex-wrap items-baseline gap-3">
@@ -413,33 +478,40 @@ export default function Portfolio() {
                 maximumFractionDigits: 2,
               })}
             </p>
-            <div className="flex items-center gap-2 text-sm">
-              <span
-                className={`font-semibold px-2 py-1 rounded-md ${
-                  portfolioStats.change24hAbs >= 0
-                    ? 'bg-green-500/10 text-green-400'
-                    : 'bg-red-500/10 text-red-400'
-                }`}
-              >
-                {portfolioStats.change24hAbs >= 0 ? '+' : ''}
-                $
-                {Math.abs(portfolioStats.change24hAbs).toLocaleString('en-US', {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{' '}
-                (24h)
+            {!zenMode && (
+              <div className="flex items-center gap-2 text-sm">
+                <span
+                  className={`font-semibold px-2 py-1 rounded-md ${
+                    portfolioStats.change24hAbs >= 0
+                      ? 'bg-green-500/10 text-green-400'
+                      : 'bg-red-500/10 text-red-400'
+                  }`}
+                >
+                  {portfolioStats.change24hAbs >= 0 ? '+' : ''}
+                  $
+                  {Math.abs(portfolioStats.change24hAbs).toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{' '}
+                  (24h)
+                </span>
+                <span
+                  className={`font-semibold px-2 py-1 rounded-md ${
+                    portfolioStats.change24hPct >= 0
+                      ? 'bg-green-500/10 text-green-400'
+                      : 'bg-red-500/10 text-red-400'
+                  }`}
+                >
+                  {portfolioStats.change24hPct >= 0 ? '+' : ''}
+                  {portfolioStats.change24hPct.toFixed(2)}%
+                </span>
+              </div>
+            )}
+            {zenMode && (
+              <span className="text-xs text-yellow-500/70 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> Vista Zen ativa — foco no longo prazo
               </span>
-              <span
-                className={`font-semibold px-2 py-1 rounded-md ${
-                  portfolioStats.change24hPct >= 0
-                    ? 'bg-green-500/10 text-green-400'
-                    : 'bg-red-500/10 text-red-400'
-                }`}
-              >
-                {portfolioStats.change24hPct >= 0 ? '+' : ''}
-                {portfolioStats.change24hPct.toFixed(2)}%
-              </span>
-            </div>
+            )}
           </div>
         </div>
 
@@ -454,8 +526,96 @@ export default function Portfolio() {
           </div>
         )}
 
-        {/* CARDS DE MÉTRICAS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+        {/* ZEN MODE: 3 PILARES VIP */}
+        {zenMode && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
+            {/* Pilar 1: AUM */}
+            <div className="bg-[#111] border border-yellow-500/20 rounded-2xl p-6 shadow-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+                  <DollarSign className="w-4 h-4 text-yellow-500" />
+                </div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">AUM — Património</p>
+              </div>
+              <p className="text-3xl font-black text-white">
+                ${portfolioStats.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                Capital investido: ${portfolioStats.totalInvested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            </div>
+
+            {/* Pilar 2: Donut por Ecossistema */}
+            <div className="bg-[#111] border border-yellow-500/20 rounded-2xl p-6 shadow-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+                  <PieChartIcon className="w-4 h-4 text-yellow-500" />
+                </div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Alocação por Ecossistema</p>
+              </div>
+              {ecosystemData.length > 0 ? (
+                <div className="flex items-center gap-3">
+                  <ResponsiveContainer width={100} height={100}>
+                    <PieChart>
+                      <Pie
+                        data={ecosystemData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={28}
+                        outerRadius={46}
+                        dataKey="value"
+                        strokeWidth={0}
+                      >
+                        {ecosystemData.map((entry, i) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(val) => [`$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, '']}
+                        contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: 8, fontSize: 11 }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="flex-1 space-y-1.5">
+                    {ecosystemData.slice(0, 4).map((eco) => (
+                      <div key={eco.name} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: eco.color }} />
+                          <span className="text-gray-300 truncate">{eco.name}</span>
+                        </div>
+                        <span className="text-gray-400 font-mono ml-1">
+                          {((eco.value / (portfolioStats.totalValue || 1)) * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500">Adicione ativos para ver a alocação.</p>
+              )}
+            </div>
+
+            {/* Pilar 3: Yield */}
+            <div className="bg-[#111] border border-yellow-500/20 rounded-2xl p-6 shadow-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-yellow-500" />
+                </div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Yield / Rendimento</p>
+              </div>
+              <p className={`text-3xl font-black ${portfolioStats.totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {portfolioStats.totalProfitLoss >= 0 ? '+' : ''}${Math.abs(portfolioStats.totalProfitLoss).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className={`text-xs font-semibold mt-1 ${portfolioStats.totalProfitLossPct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {portfolioStats.totalProfitLossPct >= 0 ? '+' : ''}{portfolioStats.totalProfitLossPct.toFixed(2)}% desde entrada
+              </p>
+              <p className="text-xs text-gray-500 mt-2">Posições DeFi em breve</p>
+            </div>
+          </div>
+        )}
+
+        {/* CARDS DE MÉTRICAS (modo normal) */}
+        {!zenMode && <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
           <div className="bg-[#111] border border-gray-800 p-5 rounded-2xl shadow-xl">
             <div className="flex items-center gap-3 text-gray-400 mb-2">
               {portfolioStats.totalProfitLoss >= 0 ? (
@@ -543,10 +703,10 @@ export default function Portfolio() {
               <p className="text-xs text-gray-500">Adicione ativos para ver o destaque.</p>
             )}
           </div>
-        </div>
+        </div>}
 
-        {/* ÁREA DE GRÁFICOS */}
-        {showCharts && (
+        {/* ÁREA DE GRÁFICOS (modo normal) */}
+        {!zenMode && showCharts && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
             <div className="bg-[#111] border border-gray-800 rounded-2xl p-5 shadow-xl flex flex-col">
               <div className="flex items-center justify-between mb-4">
@@ -654,15 +814,13 @@ export default function Portfolio() {
                   <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
                     Preço
                   </th>
-                  <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    1h%
-                  </th>
-                  <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    24h%
-                  </th>
-                  <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    7d%
-                  </th>
+                  {!zenMode && (
+                    <>
+                      <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">1h%</th>
+                      <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">24h%</th>
+                      <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">7d%</th>
+                    </>
+                  )}
                   <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
                     Holdings
                   </th>
@@ -680,7 +838,7 @@ export default function Portfolio() {
               <tbody className="divide-y divide-gray-800/50">
                 {portfolioStats.enrichedAssets.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="p-8 text-center text-gray-500">
+                    <td colSpan={zenMode ? 6 : 9} className="p-8 text-center text-gray-500">
                       <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-20" />
                       <p>O seu portfólio está vazio.</p>
                       <p className="text-sm mt-1">
@@ -717,22 +875,21 @@ export default function Portfolio() {
                           })}
                         </p>
                       </td>
-                      <td className="p-4">
-                        <span className="text-xs text-gray-600">—</span>
-                      </td>
-                      <td className="p-4">
-                        <p
-                          className={`text-xs font-semibold ${
-                            asset.change24h >= 0 ? 'text-green-500' : 'text-red-500'
-                          }`}
-                        >
-                          {asset.change24h >= 0 ? '+' : ''}
-                          {asset.change24h?.toFixed(2)}%
-                        </p>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-xs text-gray-600">—</span>
-                      </td>
+                      {!zenMode && (
+                        <>
+                          <td className="p-4">
+                            <span className="text-xs text-gray-600">—</span>
+                          </td>
+                          <td className="p-4">
+                            <p className={`text-xs font-semibold ${asset.change24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                              {asset.change24h >= 0 ? '+' : ''}{asset.change24h?.toFixed(2)}%
+                            </p>
+                          </td>
+                          <td className="p-4">
+                            <span className="text-xs text-gray-600">—</span>
+                          </td>
+                        </>
+                      )}
                       <td className="p-4">
                         <p className="font-bold text-white">
                           $

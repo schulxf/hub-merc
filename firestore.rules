@@ -30,13 +30,26 @@ service cloud.firestore {
 
       // Allow admins to read all user documents (for user management)
       allow read: if isAdmin();
-      allow update: if isAdmin() && request.resource.data.tier in ['free', 'pro', 'vip', 'admin', 'assessor'];
+      allow update: if isAdmin();
+      // Allow assessors to update lastMeetingDate and calendlyUrl on their assigned clients
+      allow update: if isAssessor() &&
+                     exists(/databases/$(database)/documents/users/$(uid)/profile) &&
+                     get(/databases/$(database)/documents/users/$(uid)/profile).data.assessorIds[request.auth.uid] == true;
     }
 
     // User subcollections: portfolio, defi, wallets, etc.
     match /users/{uid}/{document=**} {
       allow read, write: if isOwner(uid);
       allow read: if isAssessor() &&
+                     exists(/databases/$(database)/documents/users/$(uid)/profile) &&
+                     get(/databases/$(database)/documents/users/$(uid)/profile).data.assessorIds[request.auth.uid] == true;
+    }
+
+    // Rebalancing proposals: assessors can create/update proposals for their assigned clients
+    match /users/{uid}/proposals/{proposalId} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if isAdmin();
+      allow create, update: if isAssessor() &&
                      exists(/databases/$(database)/documents/users/$(uid)/profile) &&
                      get(/databases/$(database)/documents/users/$(uid)/profile).data.assessorIds[request.auth.uid] == true;
     }

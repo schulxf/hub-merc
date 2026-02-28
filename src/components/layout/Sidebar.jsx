@@ -3,7 +3,7 @@ import {
   ChevronDown, ChevronUp, Briefcase, PieChart,
   Activity, Zap, LayoutGrid,
   ArrowRightLeft, Bell, Layers, GraduationCap, LifeBuoy, LogOut, Lock, Shield,
-  Star, BookOpen
+  Star, BookOpen, Newspaper, Crown, BarChart2
 } from 'lucide-react';
 
 export const MENU_CATEGORIES = [
@@ -29,16 +29,19 @@ export const MENU_CATEGORIES = [
     ]
   },
   {
+    id: 'consulting',
+    label: 'VIP Consulting',
+    icon: Crown,
+    vipOnly: true,
+    items: [
+      { id: 'insights', label: 'Insights', icon: Newspaper, permKey: 'insights' },
+      { id: 'academia', label: 'Academia DeFi', icon: GraduationCap, permKey: 'academia' },
+    ]
+  },
+  {
     id: 'research',
     label: 'Research',
     icon: BookOpen,
-    isMock: true,
-    permKey: 'free'
-  },
-  {
-    id: 'cursos',
-    label: 'Cursos',
-    icon: GraduationCap,
     isMock: true,
     permKey: 'free'
   },
@@ -61,7 +64,14 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
       <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 px-2">Explorar</p>
       
       <div className="space-y-2">
-        {MENU_CATEGORIES.map(category => (
+        {MENU_CATEGORIES.filter(category => {
+          // Hide VIP Consulting category from free/pro users
+          if (category.vipOnly) {
+            const tierWeight = { free: 0, pro: 1, vip: 2, assessor: 2, admin: 3 };
+            return (tierWeight[userTier] || 0) >= 2;
+          }
+          return true;
+        }).map(category => (
           <div key={category.id} className="space-y-1">
             {category.items ? (
               <>
@@ -121,20 +131,33 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
         ))}
       </div>
 
-      {/* NOVO: O BOTÃO DO PAINEL DE ADMINISTRAÇÃO */}
-      {userTier === 'admin' && (
+      {/* BOTÕES DE GESTÃO: Admin + Assessor */}
+      {(userTier === 'admin' || userTier === 'assessor') && (
         <div className="mt-6 pt-6 border-t border-gray-800 px-2">
           <p className="text-[10px] font-bold text-purple-500/70 uppercase tracking-widest mb-3">Gestão</p>
+          {userTier === 'admin' && (
+            <button
+              onClick={() => navigateTo('admin')}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 select-none mb-1 ${
+                currentRoute === 'admin'
+                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-sm'
+                  : 'text-purple-500/70 hover:text-purple-400 hover:bg-purple-500/10'
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              Painel Admin
+            </button>
+          )}
           <button
-            onClick={() => navigateTo('admin')}
+            onClick={() => navigateTo('assessor-dashboard')}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 select-none ${
-              currentRoute === 'admin'
-                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30 shadow-sm'
-                : 'text-purple-500/70 hover:text-purple-400 hover:bg-purple-500/10'
+              currentRoute === 'assessor-dashboard'
+                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 shadow-sm'
+                : 'text-blue-500/70 hover:text-blue-400 hover:bg-blue-500/10'
             }`}
           >
-            <Shield className="w-4 h-4" />
-            Painel Admin
+            <BarChart2 className="w-4 h-4" />
+            Terminal Assessor
           </button>
         </div>
       )}
