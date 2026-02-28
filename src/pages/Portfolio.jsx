@@ -1,197 +1,252 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  PieChart as PieChartIcon,
-  Plus,
-  Trash2,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Wallet,
-  Loader2,
-  AlertCircle,
-  RefreshCw,
-  MoreHorizontal,
-  Eye,
-  EyeOff,
-  Sparkles,
-} from 'lucide-react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import React, { useReducer, useCallback, useEffect } from 'react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { db, auth } from '../lib/firebase';
-import { collection, doc, setDoc, deleteDoc, onSnapshot, query } from 'firebase/firestore';
-import { useWalletBalances } from '../hooks/useWalletBalances';
-import { useWallets } from '../hooks/useWallets';
-import { useCryptoPrices } from '../hooks/useCryptoPrices';
-import { useUserProfile } from '../hooks/useUserProfile';
+import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { SUPPORTED_COINS } from '../data/mockDb';
 import { lookupCoinGeckoId } from '../lib/web3Api';
 
-export default function Portfolio() {
-  const [portfolioAssets, setPortfolioAssets] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+import { PortfolioProvider, usePortfolioContext } from '../components/portfolio/PortfolioContext';
+import { useFirstLoadSnapshot } from '../hooks/useFirstLoadSnapshot';
+import PortfolioHeader from '../components/portfolio/PortfolioHeader';
+import PortfolioTabs from '../components/portfolio/PortfolioTabs';
+import OverviewTab from '../components/portfolio/OverviewTab';
+import AdvancedAssetTable from '../components/portfolio/AdvancedAssetTable';
+import AssetDetailSlideOver from '../components/portfolio/AssetDetailSlideOver';
+import TransactionHistory from '../components/portfolio/TransactionHistory';
+import AddTransactionDropdown from '../components/portfolio/AddTransactionDropdown';
+import SnapshotStatus from '../components/portfolio/SnapshotStatus';
+import OpportunityBanner from '../components/portfolio/OpportunityBanner';
+import { seedTransactionsIfEmpty } from '../services/transactionService';
+import { fmt } from '../lib/utils';
+import { portfolioReducer, initialPortfolioState, PORTFOLIO_ACTIONS } from './portfolioReducer';
 
-  const { wallets } = useWallets();
-  const [syncTrigger, setSyncTrigger] = useState(null);
-  const [localSyncWarning, setLocalSyncWarning] = useState('');
-  const [showCharts, setShowCharts] = useState(true);
-  const [zenMode, setZenMode] = useState(() => localStorage.getItem('mercurius_zen_mode') === 'true');
+// ---------------------------------------------------------------------------
+// Tab persistence key (sessionStorage)
+// ---------------------------------------------------------------------------
 
-  const { profile } = useUserProfile();
-  const canUseZen = profile?.tier === 'vip' || profile?.tier === 'admin' || profile?.tier === 'assessor';
+const SESSION_TAB_KEY = 'portfolio_active_tab';
+const VALID_TABS = ['overview', 'assets', 'history'];
 
-  const toggleZen = () => {
-    setZenMode(prev => {
-      const next = !prev;
-      localStorage.setItem('mercurius_zen_mode', String(next));
-      return next;
-    });
-  };
+function readPersistedTab() {
+  try {
+    const saved = sessionStorage.getItem(SESSION_TAB_KEY);
+    return VALID_TABS.includes(saved) ? saved : 'overview';
+  } catch {
+    return 'overview';
+  }
+}
 
-  const {
-    tokens: onChainTokens,
-    isLoading: isSyncingOnChain,
-    error: onChainError,
-    warning: onChainWarning,
-  } = useWalletBalances(wallets, syncTrigger);
+function persistTab(tabId) {
+  try {
+    sessionStorage.setItem(SESSION_TAB_KEY, tabId);
+  } catch {
+    // sessionStorage unavailable — proceed silently
+  }
+}
 
-  // IDs dos coins no portfólio para buscar preços
-  const coinIds = useMemo(() => portfolioAssets.map(a => a.coinId), [portfolioAssets]);
-  const { prices: livePrices } = useCryptoPrices(coinIds);
+// ---------------------------------------------------------------------------
+// AssetsTab — Tab 2 inner component (needs slide-over state)
+// ---------------------------------------------------------------------------
 
-  // Estados do Modal de Adicionar/Editar Ativo
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditingAsset, setIsEditingAsset] = useState(null); // null or asset.id for edit mode
-  const [selectedCoin, setSelectedCoin] = useState('bitcoin');
-  const [amount, setAmount] = useState('');
-  const [buyPrice, setBuyPrice] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+/**
+ * AssetsTab — renders the "Gestao de Ativos" tab.
+ *
+ * Manages the AssetDetailSlideOver state locally since it's only needed here.
+ *
+ * @param {object}   props
+ * @param {Function} props.onEditAsset   - Delegates edit to Portfolio-level modal
+ * @param {Function} props.onDeleteAsset - Delegates delete to Portfolio-level handler
+ */
+function AssetsTab({ onEditAsset, onDeleteAsset }) {
+  const { portfolioAssets, livePrices } = usePortfolioContext();
 
-  // Estados para importar tokens on-chain para o portfólio
-  const [addingOnChainToken, setAddingOnChainToken] = useState(null);
-  const [isLookingUp, setIsLookingUp] = useState(null); // ID do token sendo buscado
+  const [slideOverAsset, setSlideOverAsset] = React.useState(null);
+  const [isSlideOverOpen, setIsSlideOverOpen] = React.useState(false);
 
-  // 1. LER DADOS DO FIREBASE EM TEMPO REAL
-  useEffect(() => {
-    if (!auth.currentUser) {
-      setIsLoading(false);
-      return;
-    }
-
-    // Aponta para a "pasta" do utilizador logado
-    const portfolioRef = collection(db, 'users', auth.currentUser.uid, 'portfolio');
-    const q = query(portfolioRef);
-
-    // onSnapshot fica a ouvir mudanças em tempo real no servidor
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const assets = [];
-      snapshot.forEach((doc) => {
-        assets.push({ id: doc.id, ...doc.data() });
-      });
-      setPortfolioAssets(assets);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Erro ao buscar portfólio:", error);
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe(); // Limpeza quando sai da página
+  const handleRowClick = useCallback((asset) => {
+    setSlideOverAsset(asset);
+    setIsSlideOverOpen(true);
   }, []);
 
-  // Preços agora são geridos pelo hook useCryptoPrices (auto-refresh 60s)
+  const handleCloseSlideOver = useCallback(() => {
+    setIsSlideOverOpen(false);
+  }, []);
 
-  // 3. GRAVAR NOVO ATIVO OU EDITAR ATIVO EXISTENTE NO FIREBASE
+  const currentPriceForSlideOver = slideOverAsset
+    ? (livePrices[slideOverAsset.coinId]?.usd ?? 0)
+    : 0;
+
+  return (
+    <>
+      <div className="animate-fade-in">
+        <AdvancedAssetTable
+          onRowClick={handleRowClick}
+          onEditAsset={onEditAsset}
+          onDeleteAsset={onDeleteAsset}
+        />
+      </div>
+
+      <AssetDetailSlideOver
+        asset={slideOverAsset}
+        currentPrice={currentPriceForSlideOver}
+        isOpen={isSlideOverOpen}
+        onClose={handleCloseSlideOver}
+      />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PortfolioContent
+// ---------------------------------------------------------------------------
+
+/**
+ * PortfolioContent — inner component that consumes PortfolioContext.
+ *
+ * All local UI state is managed by a single useReducer call (portfolioReducer).
+ * This replaces the original 10 useState hooks, centralising the modal logic
+ * and the on-chain import flow into predictable, testable transitions.
+ *
+ * @returns {React.ReactElement}
+ */
+function PortfolioContent() {
+  const {
+    portfolioAssets,
+    livePrices,
+    onChainTokens,
+    isSyncingOnChain,
+    onChainError,
+    onChainWarning,
+    isLoading,
+  } = usePortfolioContext();
+
+  // Capture a daily snapshot on first load if one does not yet exist for today
+  const { isCapturing: isCapturingSnapshot, lastCapturedAt } =
+    useFirstLoadSnapshot(portfolioAssets, livePrices);
+
+  // ===== SINGLE REDUCER FOR ALL PAGE STATE =====
+  const [state, dispatch] = useReducer(portfolioReducer, initialPortfolioState);
+
+  // Destructure for readability
+  const { modal, addingOnChain, syncWarning } = state;
+
+  // ===== TAB STATE =====
+  const [activeTab, setActiveTab] = React.useState(readPersistedTab);
+
+  const handleSetActiveTab = useCallback((tabId) => {
+    setActiveTab(tabId);
+    persistTab(tabId);
+  }, []);
+
+  // ===== SEED TRANSACTIONS (once assets are loaded) =====
+  useEffect(() => {
+    if (Array.isArray(portfolioAssets) && portfolioAssets.length > 0) {
+      seedTransactionsIfEmpty(portfolioAssets).catch((err) => {
+        console.warn('[Portfolio] seed transactions failed:', err);
+      });
+    }
+  }, [portfolioAssets]);
+
+  // ===== HANDLERS =====
+
   const handleAddAsset = async (e) => {
     e.preventDefault();
-    if (!auth.currentUser || !amount || !buyPrice) return;
+    if (!auth.currentUser || !modal.amount || !modal.buyPrice) return;
 
-    setIsSaving(true);
-    const coin = SUPPORTED_COINS.find(c => c.id === selectedCoin);
+    dispatch({ type: PORTFOLIO_ACTIONS.SAVE_START });
+    const coin = SUPPORTED_COINS.find((c) => c.id === modal.selectedCoin);
 
     try {
-      const assetRef = doc(db, 'users', auth.currentUser.uid, 'portfolio', selectedCoin);
-
-      // Salva ou atualiza a moeda no banco de dados
+      const assetRef = doc(db, 'users', auth.currentUser.uid, 'portfolio', modal.selectedCoin);
       await setDoc(assetRef, {
-        coinId: selectedCoin,
+        coinId: modal.selectedCoin,
         symbol: coin.symbol,
         name: coin.name,
         color: coin.color,
-        amount: parseFloat(amount),
-        averageBuyPrice: parseFloat(buyPrice),
-        updatedAt: new Date().toISOString()
+        amount: parseFloat(modal.amount),
+        averageBuyPrice: parseFloat(modal.buyPrice),
+        updatedAt: new Date().toISOString(),
       });
 
-      setIsModalOpen(false);
-      setIsEditingAsset(null);
-      setAmount('');
-      setBuyPrice('');
-      setSelectedCoin('bitcoin');
+      dispatch({ type: PORTFOLIO_ACTIONS.CLOSE_MODAL });
     } catch (error) {
-      console.error("Erro ao guardar ativo:", error);
-      alert("Erro ao guardar ativo. Tente novamente.");
+      console.error('Erro ao guardar ativo:', error);
+      alert('Erro ao guardar ativo. Tente novamente.');
     } finally {
-      setIsSaving(false);
+      dispatch({ type: PORTFOLIO_ACTIONS.SAVE_END });
     }
   };
 
-  // Abrir modal para editar ativo existente
-  const handleEditAsset = (asset) => {
-    setSelectedCoin(asset.coinId);
-    setAmount(asset.amount.toString());
-    setBuyPrice(asset.averageBuyPrice.toString());
-    setIsEditingAsset(asset.id);
-    setIsModalOpen(true);
-  };
+  const handleEditAsset = useCallback((asset) => {
+    dispatch({
+      type: PORTFOLIO_ACTIONS.OPEN_MODAL_EDIT,
+      payload: {
+        assetId: asset.id,
+        coinId: asset.coinId,
+        amount: asset.amount,
+        buyPrice: asset.averageBuyPrice,
+      },
+    });
+  }, []);
 
-  // Cancelar edição
-  const handleCancelModal = () => {
-    setIsModalOpen(false);
-    setIsEditingAsset(null);
-    setAmount('');
-    setBuyPrice('');
-    setSelectedCoin('bitcoin');
-  };
+  const handleCancelModal = useCallback(() => {
+    dispatch({ type: PORTFOLIO_ACTIONS.CLOSE_MODAL });
+  }, []);
 
-  // 4. APAGAR ATIVO DO FIREBASE
-  const handleRemoveAsset = async (coinId) => {
+  const handleRemoveAsset = useCallback(async (coinId) => {
     if (!auth.currentUser) return;
-    if (!window.confirm("Tem a certeza que deseja remover este ativo?")) return;
+    if (!window.confirm('Tem a certeza que deseja remover este ativo?')) return;
 
     try {
       const assetRef = doc(db, 'users', auth.currentUser.uid, 'portfolio', coinId);
       await deleteDoc(assetRef);
     } catch (error) {
-      console.error("Erro ao remover ativo:", error);
+      console.error('Erro ao remover ativo:', error);
     }
-  };
+  }, []);
 
-  // 5. IMPORTAR TOKEN ON-CHAIN PARA O PORTFÓLIO
+  const handleAddAssetClick = useCallback(() => {
+    dispatch({ type: PORTFOLIO_ACTIONS.OPEN_MODAL });
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    // Future: trigger a manual price refresh via useCryptoPrices
+  }, []);
+
   const handleAddOnChainToken = async (token) => {
     if (!auth.currentUser) return;
-    setIsLookingUp(token.id);
+    dispatch({
+      type: PORTFOLIO_ACTIONS.ONCHAIN_LOOKUP_START,
+      payload: { tokenId: token.id },
+    });
 
     try {
       const cgMatch = await lookupCoinGeckoId(token.symbol);
       const coinId = cgMatch?.id || token.symbol.toLowerCase();
 
-      setAddingOnChainToken({
-        coinId,
-        symbol: token.symbol,
-        name: cgMatch?.name || token.name,
-        amount: token.amount,
+      dispatch({
+        type: PORTFOLIO_ACTIONS.ONCHAIN_LOOKUP_END,
+        payload: {
+          token: {
+            coinId,
+            symbol: token.symbol,
+            name: cgMatch?.name || token.name,
+            amount: token.amount,
+          },
+        },
       });
     } catch (error) {
       console.error('Erro ao buscar token:', error);
-    } finally {
-      setIsLookingUp(null);
+      dispatch({ type: PORTFOLIO_ACTIONS.ONCHAIN_CLEAR });
     }
   };
 
   const handleSaveOnChainAsset = async () => {
-    if (!auth.currentUser || !addingOnChainToken) return;
-    setIsSaving(true);
+    if (!auth.currentUser || !addingOnChain.token) return;
+    dispatch({ type: PORTFOLIO_ACTIONS.SAVE_START });
 
     try {
-      const t = addingOnChainToken;
+      const t = addingOnChain.token;
       const assetRef = doc(db, 'users', auth.currentUser.uid, 'portfolio', t.coinId);
 
       await setDoc(assetRef, {
@@ -205,827 +260,247 @@ export default function Portfolio() {
         updatedAt: new Date().toISOString(),
       });
 
-      setAddingOnChainToken(null);
+      dispatch({ type: PORTFOLIO_ACTIONS.ONCHAIN_CLEAR });
     } catch (error) {
       console.error('Erro ao guardar ativo on-chain:', error);
       alert('Erro ao guardar ativo. Tente novamente.');
     } finally {
-      setIsSaving(false);
+      dispatch({ type: PORTFOLIO_ACTIONS.SAVE_END });
     }
   };
 
-  // 6. CÁLCULOS DO PORTFÓLIO
-  const portfolioStats = useMemo(() => {
-    let totalValue = 0;
-    let totalInvested = 0;
-    let totalValue24hAgo = 0;
+  // ===== DERIVED PORTFOLIO METRICS (for header) =====
 
-    const enrichedAssets = portfolioAssets.map(asset => {
-      const liveData = livePrices[asset.coinId] || { usd: asset.averageBuyPrice, usd_24h_change: 0 };
-      const currentPrice = liveData.usd;
-      const currentValue = asset.amount * currentPrice;
-      const investedValue = asset.amount * asset.averageBuyPrice;
-      const profitLoss = currentValue - investedValue;
-      const profitLossPct = investedValue > 0 ? (profitLoss / investedValue) * 100 : 0;
+  const totalValue = Array.isArray(portfolioAssets)
+    ? portfolioAssets.reduce((sum, asset) => {
+        const price = livePrices[asset.coinId]?.usd ?? 0;
+        return sum + asset.amount * price;
+      }, 0)
+    : 0;
 
-      const change24hPct = typeof liveData.usd_24h_change === 'number' ? liveData.usd_24h_change : 0;
-      const safeDenominator = 1 + change24hPct / 100;
-      const price24hAgo = safeDenominator > 0 ? currentPrice / safeDenominator : currentPrice;
-      const value24hAgo = asset.amount * price24hAgo;
-
-      totalValue += currentValue;
-      totalInvested += investedValue;
-      totalValue24hAgo += value24hAgo;
-
-      return {
-        ...asset,
-        currentPrice,
-        currentValue,
-        investedValue,
-        profitLoss,
-        profitLossPct,
-        change24h: liveData.usd_24h_change
-      };
-    }).sort((a, b) => b.currentValue - a.currentValue); // Ordena por maior valor
-
-    const totalProfitLoss = totalValue - totalInvested;
-    const totalProfitLossPct = totalInvested > 0 ? (totalProfitLoss / totalInvested) * 100 : 0;
-
-    const change24hAbs = totalValue - totalValue24hAgo;
-    const change24hPct = totalValue24hAgo > 0 ? (change24hAbs / totalValue24hAgo) * 100 : 0;
-
-    let bestPerformer = null;
-    let worstPerformer = null;
-
-    if (enrichedAssets.length > 0) {
-      bestPerformer = enrichedAssets.reduce(
-        (best, asset) => (!best || asset.profitLossPct > best.profitLossPct ? asset : best),
-        null,
-      );
-      worstPerformer = enrichedAssets.reduce(
-        (worst, asset) => (!worst || asset.profitLossPct < worst.profitLossPct ? asset : worst),
-        null,
-      );
-    }
-
-    return {
-      totalValue,
-      totalInvested,
-      totalProfitLoss,
-      totalProfitLossPct,
-      change24hAbs,
-      change24hPct,
-      enrichedAssets,
-      bestPerformer,
-      worstPerformer,
-    };
-  }, [portfolioAssets, livePrices]);
-
-  // Ecosystem lookup for Zen Mode donut chart
-  const ECOSYSTEM_MAP = {
-    bitcoin: { name: 'Bitcoin', color: '#F7931A' },
-    ethereum: { name: 'Ethereum', color: '#627EEA' },
-    solana: { name: 'Solana', color: '#9945FF' },
-    'avalanche-2': { name: 'Avalanche', color: '#E84142' },
-    binancecoin: { name: 'BNB Chain', color: '#F0B90B' },
-    'matic-network': { name: 'Polygon', color: '#8247E5' },
-    chainlink: { name: 'Chainlink', color: '#2A5ADA' },
-    tether: { name: 'Stablecoins', color: '#26A17B' },
-    'usd-coin': { name: 'Stablecoins', color: '#26A17B' },
-    dai: { name: 'Stablecoins', color: '#26A17B' },
-    arbitrum: { name: 'Arbitrum', color: '#28A0F0' },
-    optimism: { name: 'Optimism', color: '#FF0420' },
-  };
-
-  const ecosystemData = useMemo(() => {
-    const ecosystems = {};
-    portfolioStats.enrichedAssets.forEach(asset => {
-      const eco = ECOSYSTEM_MAP[asset.coinId] || { name: 'EVM Alts', color: '#6366F1' };
-      if (!ecosystems[eco.name]) {
-        ecosystems[eco.name] = { name: eco.name, value: 0, color: eco.color };
-      }
-      ecosystems[eco.name].value += asset.currentValue;
-    });
-    return Object.values(ecosystems)
-      .filter(e => e.value > 0)
-      .sort((a, b) => b.value - a.value);
-  }, [portfolioStats.enrichedAssets]);
+  // ===== LOADING STATE =====
 
   if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+        <div className="w-8 h-8 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
       </div>
     );
   }
 
+  // ===== RENDER =====
+
   return (
-    <div className="animate-in fade-in pb-12 grid gap-5 md:grid-cols-[260px,1fr]">
-      {/* SIDEBAR ESQUERDA */}
-      <aside className="space-y-4">
-        <div className="bg-[#111] border border-gray-800 rounded-2xl p-5 shadow-xl">
-          <div className="flex items-center justify-between mb-3">
+    <div className="animate-fade-in pb-12 px-6 md:px-8 max-w-[1600px] mx-auto relative min-h-screen">
+
+      {/* ── ATMOSPHERIC BACKGROUND ──────────────────────────────────────── */}
+      <div className="fixed inset-0 pointer-events-none -z-10">
+        <div className="absolute inset-0" style={{ background: '#07090C' }} />
+        <div
+          className="absolute rounded-full"
+          style={{
+            top: '-160px', left: '-120px',
+            width: '720px', height: '720px',
+            background: 'radial-gradient(circle, rgba(0,255,239,0.12) 0%, transparent 70%)',
+            filter: 'blur(40px)',
+          }}
+        />
+        <div
+          className="absolute rounded-full"
+          style={{
+            bottom: '-200px', right: '-160px',
+            width: '640px', height: '640px',
+            background: 'radial-gradient(circle, rgba(26,111,212,0.1) 0%, transparent 70%)',
+            filter: 'blur(40px)',
+          }}
+        />
+        <div
+          className="absolute rounded-full"
+          style={{
+            top: '40%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '500px', height: '500px',
+            background: 'radial-gradient(circle, rgba(0,255,239,0.04) 0%, transparent 70%)',
+            filter: 'blur(60px)',
+          }}
+        />
+        <div className="absolute inset-0" style={{ background: 'rgba(7,9,12,0.55)' }} />
+        <svg className="absolute inset-0 w-full h-full" style={{ opacity: 0.025 }}>
+          <filter id="grain">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="noise" />
+            <feColorMatrix in="noise" type="saturate" values="0" />
+          </filter>
+          <rect width="100%" height="100%" filter="url(#grain)" />
+        </svg>
+      </div>
+
+      {/* ========== 1. HEADER ========== */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pt-4">
+        {/* Left: Title + Value */}
+        <div>
+          <div className="flex items-center gap-3 mb-3">
+            <h1 className="text-2xl font-black text-text-primary tracking-tight">Meu Portfolio</h1>
+            <div className="px-3 py-1 rounded-lg bg-cyan/10 border border-cyan/20 text-cyan text-xs font-bold uppercase tracking-widest">
+              Principal
+            </div>
+          </div>
+
+          <div className="flex items-baseline gap-4 md:gap-6 mt-3">
+            <h2 className="text-5xl md:text-6xl font-black text-text-primary tracking-tighter leading-none">
+              ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </h2>
+          </div>
+          <p className="text-sm text-text-tertiary mt-2 font-medium">Atualizado nas ultimas 24h</p>
+        </div>
+
+        {/* Right: Action Buttons */}
+        <div className="flex items-center gap-2 md:gap-3 flex-wrap md:flex-nowrap">
+          <AddTransactionDropdown />
+
+          <PortfolioHeader
+            onAddAsset={handleAddAssetClick}
+            onRefresh={handleRefresh}
+          />
+        </div>
+      </div>
+
+      {/* ========== 2. ALERTS ========== */}
+      {(syncWarning || onChainWarning || onChainError) && (
+        <div className="mb-6 bg-orange-500/10 border border-orange-500/30 rounded-lg px-4 py-3 text-sm text-orange-200 flex items-start gap-3 animate-fade-in">
+          <AlertCircle className="w-5 h-5 mt-0.5 text-orange-400 flex-shrink-0" />
+          <div className="space-y-1">
+            {syncWarning && <p>{syncWarning}</p>}
+            {onChainWarning && <p>{onChainWarning}</p>}
+            {onChainError && <p>{onChainError}</p>}
+          </div>
+        </div>
+      )}
+
+      {/* ========== 3. SNAPSHOT & OPPORTUNITY ========== */}
+      <div className="space-y-4 mb-8">
+        <SnapshotStatus isCapturing={isCapturingSnapshot} lastCapturedAt={lastCapturedAt} />
+        <OpportunityBanner onSwapClick={handleAddAssetClick} />
+      </div>
+
+      {/* ========== 4. TABS NAVIGATION ========== */}
+      <PortfolioTabs activeTab={activeTab} setActiveTab={handleSetActiveTab} />
+
+      {/* ========== 5. TAB CONTENT ========== */}
+
+      {/* Tab 1: Visao Geral */}
+      {activeTab === 'overview' && <OverviewTab />}
+
+      {/* Tab 2: Gestao de Ativos */}
+      {activeTab === 'assets' && (
+        <AssetsTab
+          onEditAsset={handleEditAsset}
+          onDeleteAsset={handleRemoveAsset}
+        />
+      )}
+
+      {/* Tab 3: Historico de Transacoes */}
+      {activeTab === 'history' && <TransactionHistory />}
+
+      {/* ========== ON-CHAIN TOKENS (only on overview tab) ========== */}
+      {activeTab === 'overview' && onChainTokens && onChainTokens.length > 0 && (
+        <section className="animate-fade-in mt-8">
+          <div className="space-y-4 mb-5">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-2xl bg-blue-500/10 border border-blue-500/40 flex items-center justify-center">
-                <PieChartIcon className="w-4 h-4 text-blue-400" />
-              </div>
               <div>
-                <p className="text-[11px] text-gray-500 uppercase tracking-wider font-semibold">
-                  Portfólio próprio
-                </p>
-                <p className="text-sm font-bold text-white leading-tight">
-                  Portfólio principal
-                </p>
+                <h2 className="text-lg font-black text-text-primary">Tokens On-Chain</h2>
+                <p className="text-sm text-text-tertiary">Ativos detectados nas suas carteiras</p>
               </div>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mb-2">Valor total</p>
-          <p className="text-2xl font-extrabold text-white">
-            $
-            {portfolioStats.totalValue.toLocaleString('en-US', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </p>
-        </div>
 
-        <div className="bg-[#111] border border-gray-800 rounded-2xl p-5 shadow-xl">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-gray-300 uppercase tracking-wider">
-              Meus portfólios
-            </p>
-            <span className="text-[11px] text-gray-500">1 ativo</span>
-          </div>
-          <div className="space-y-2 mb-4">
-            <button
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#181818] border border-gray-700 text-left"
-            >
-              <div>
-                <p className="text-sm font-semibold text-white">Portfólio principal</p>
-                <p className="text-[11px] text-gray-500">
-                  Default • {portfolioStats.enrichedAssets.length} ativos
-                </p>
-              </div>
-            </button>
-          </div>
-          <button
-            type="button"
-            disabled
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-gray-700 text-xs font-semibold text-gray-500 cursor-not-allowed"
+          <div
+            className="relative overflow-hidden"
+            style={{
+              background: 'rgba(255,255,255,0.02)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: '18px',
+            }}
           >
-            <Plus className="w-3 h-3" />
-            Novo portfólio (em breve)
-          </button>
-        </div>
-      </aside>
-
-      {/* CONTEÚDO PRINCIPAL */}
-      <section>
-        {/* HEADER DO PORTFÓLIO */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-              <PieChartIcon className="w-8 h-8 text-blue-500" />
-              Meu Portfólio
-            </h1>
-            <div className="flex items-center gap-4">
-              <p className="text-gray-400 text-sm">
-                Acompanhe o valor e a performance da sua carteira.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-            <button
-              type="button"
-              onClick={() => {
-                if (!wallets || wallets.length === 0) {
-                  setLocalSyncWarning(
-                    'Adicione pelo menos uma carteira em Perfil & Carteiras para puxar dados on-chain.',
-                  );
-                  return;
-                }
-                setLocalSyncWarning('');
-                setSyncTrigger(Date.now().toString());
+            <div
+              className="absolute top-0 left-0 right-0 pointer-events-none"
+              style={{
+                height: '1px',
+                background: 'linear-gradient(to right, transparent, rgba(0,255,239,0.3), rgba(26,111,212,0.2))',
+                zIndex: 1,
               }}
-              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-blue-500 select-none"
-            >
-              {isSyncingOnChain ? (
-                <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-              ) : (
-                <RefreshCw className="w-4 h-4 text-blue-400" />
-              )}
-              <span>Sync on-chain</span>
-            </button>
-            <button
-              onClick={() => {
-                setIsEditingAsset(null);
-                setSelectedCoin('bitcoin');
-                setAmount('');
-                setBuyPrice('');
-                setIsModalOpen(true);
-              }}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20 outline-none focus:ring-2 focus:ring-blue-500 select-none"
-            >
-              <Plus className="w-4 h-4" /> Adicionar transação
-            </button>
-            {canUseZen && (
-              <button
-                type="button"
-                onClick={toggleZen}
-                className={`px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border outline-none focus:ring-2 focus:ring-yellow-500 select-none ${
-                  zenMode
-                    ? 'bg-yellow-500/10 border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/20'
-                    : 'bg-[#111] border-gray-700 text-gray-100 hover:bg-[#181818]'
-                }`}
-                title="Vista Zen VIP — sem ruído diário"
-              >
-                <Sparkles className="w-4 h-4" />
-                {zenMode ? 'Vista Zen' : 'Vista Zen'}
-              </button>
-            )}
-            <button
-              type="button"
-              className="bg-[#111] hover:bg-[#181818] text-gray-100 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 select-none"
-            >
-              Export
-            </button>
-            {!zenMode && (
-              <button
-                type="button"
-                onClick={() => setShowCharts((prev) => !prev)}
-                className="bg-[#111] hover:bg-[#181818] text-gray-100 px-4 py-2.5 rounded-xl font-bold text-sm transition-colors flex items-center gap-2 border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 select-none"
-              >
-                {showCharts ? 'Ocultar gráficos' : 'Mostrar gráficos'}
-              </button>
-            )}
-            <button
-              type="button"
-              className="bg-[#111] hover:bg-[#181818] text-gray-400 px-3 py-2.5 rounded-xl transition-colors border border-gray-700 outline-none focus:ring-2 focus:ring-blue-500 select-none flex items-center justify-center"
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* AUM DISPLAY — Zen: só total limpo; Normal: total + variação 24h */}
-        <div className="mb-6">
-          <p className="text-xs text-gray-400 mb-1">Valor total</p>
-          <div className="flex flex-wrap items-baseline gap-3">
-            <p className="text-4xl font-extrabold text-white">
-              $
-              {portfolioStats.totalValue.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </p>
-            {!zenMode && (
-              <div className="flex items-center gap-2 text-sm">
-                <span
-                  className={`font-semibold px-2 py-1 rounded-md ${
-                    portfolioStats.change24hAbs >= 0
-                      ? 'bg-green-500/10 text-green-400'
-                      : 'bg-red-500/10 text-red-400'
-                  }`}
-                >
-                  {portfolioStats.change24hAbs >= 0 ? '+' : ''}
-                  $
-                  {Math.abs(portfolioStats.change24hAbs).toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}{' '}
-                  (24h)
-                </span>
-                <span
-                  className={`font-semibold px-2 py-1 rounded-md ${
-                    portfolioStats.change24hPct >= 0
-                      ? 'bg-green-500/10 text-green-400'
-                      : 'bg-red-500/10 text-red-400'
-                  }`}
-                >
-                  {portfolioStats.change24hPct >= 0 ? '+' : ''}
-                  {portfolioStats.change24hPct.toFixed(2)}%
-                </span>
-              </div>
-            )}
-            {zenMode && (
-              <span className="text-xs text-yellow-500/70 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> Vista Zen ativa — foco no longo prazo
-              </span>
-            )}
-          </div>
-        </div>
-
-        {(localSyncWarning || onChainWarning || onChainError) && (
-          <div className="mb-6 bg-[#111111] border border-yellow-500/30 rounded-xl px-4 py-3 text-sm text-yellow-200 flex items-start gap-3">
-            <AlertCircle className="w-4 h-4 mt-0.5 text-yellow-400" />
-            <div>
-              {localSyncWarning && <p>{localSyncWarning}</p>}
-              {onChainWarning && <p>{onChainWarning}</p>}
-              {onChainError && <p>{onChainError}</p>}
-            </div>
-          </div>
-        )}
-
-        {/* ZEN MODE: 3 PILARES VIP */}
-        {zenMode && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-            {/* Pilar 1: AUM */}
-            <div className="bg-[#111] border border-yellow-500/20 rounded-2xl p-6 shadow-xl">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-8 h-8 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
-                  <DollarSign className="w-4 h-4 text-yellow-500" />
-                </div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">AUM — Património</p>
-              </div>
-              <p className="text-3xl font-black text-white">
-                ${portfolioStats.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-              <p className="text-xs text-gray-500 mt-2">
-                Capital investido: ${portfolioStats.totalInvested.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-            </div>
-
-            {/* Pilar 2: Donut por Ecossistema */}
-            <div className="bg-[#111] border border-yellow-500/20 rounded-2xl p-6 shadow-xl">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-8 h-8 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
-                  <PieChartIcon className="w-4 h-4 text-yellow-500" />
-                </div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Alocação por Ecossistema</p>
-              </div>
-              {ecosystemData.length > 0 ? (
-                <div className="flex items-center gap-3">
-                  <ResponsiveContainer width={100} height={100}>
-                    <PieChart>
-                      <Pie
-                        data={ecosystemData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={28}
-                        outerRadius={46}
-                        dataKey="value"
-                        strokeWidth={0}
-                      >
-                        {ecosystemData.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(val) => [`$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, '']}
-                        contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: 8, fontSize: 11 }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="flex-1 space-y-1.5">
-                    {ecosystemData.slice(0, 4).map((eco) => (
-                      <div key={eco.name} className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: eco.color }} />
-                          <span className="text-gray-300 truncate">{eco.name}</span>
-                        </div>
-                        <span className="text-gray-400 font-mono ml-1">
-                          {((eco.value / (portfolioStats.totalValue || 1)) * 100).toFixed(0)}%
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="text-xs text-gray-500">Adicione ativos para ver a alocação.</p>
-              )}
-            </div>
-
-            {/* Pilar 3: Yield */}
-            <div className="bg-[#111] border border-yellow-500/20 rounded-2xl p-6 shadow-xl">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-8 h-8 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-yellow-500" />
-                </div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Yield / Rendimento</p>
-              </div>
-              <p className={`text-3xl font-black ${portfolioStats.totalProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {portfolioStats.totalProfitLoss >= 0 ? '+' : ''}${Math.abs(portfolioStats.totalProfitLoss).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </p>
-              <p className={`text-xs font-semibold mt-1 ${portfolioStats.totalProfitLossPct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                {portfolioStats.totalProfitLossPct >= 0 ? '+' : ''}{portfolioStats.totalProfitLossPct.toFixed(2)}% desde entrada
-              </p>
-              <p className="text-xs text-gray-500 mt-2">Posições DeFi em breve</p>
-            </div>
-          </div>
-        )}
-
-        {/* CARDS DE MÉTRICAS (modo normal) */}
-        {!zenMode && <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
-          <div className="bg-[#111] border border-gray-800 p-5 rounded-2xl shadow-xl">
-            <div className="flex items-center gap-3 text-gray-400 mb-2">
-              {portfolioStats.totalProfitLoss >= 0 ? (
-                <TrendingUp className="w-5 h-5 text-green-500" />
-              ) : (
-                <TrendingDown className="w-5 h-5 text-red-500" />
-              )}
-              <h3 className="font-semibold text-sm">Lucro total</h3>
-            </div>
-            <p
-              className={`text-2xl font-black ${
-                portfolioStats.totalProfitLoss >= 0 ? 'text-green-500' : 'text-red-500'
-              }`}
-            >
-              {portfolioStats.totalProfitLoss >= 0 ? '+' : ''}
-              $
-              {portfolioStats.totalProfitLoss.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </p>
-            <p
-              className={`mt-1 text-xs font-semibold ${
-                portfolioStats.totalProfitLossPct >= 0 ? 'text-green-400' : 'text-red-400'
-              }`}
-            >
-              {portfolioStats.totalProfitLossPct >= 0 ? '+' : ''}
-              {portfolioStats.totalProfitLossPct.toFixed(2)}%
-            </p>
-          </div>
-
-          <div className="bg-[#111] border border-gray-800 p-5 rounded-2xl shadow-xl">
-            <div className="flex items-center gap-3 text-gray-400 mb-2">
-              <DollarSign className="w-5 h-5" />
-              <h3 className="font-semibold text-sm">Cost basis</h3>
-            </div>
-            <p className="text-2xl font-black text-white">
-              $
-              {portfolioStats.totalInvested.toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </p>
-            <p className="mt-1 text-xs text-gray-500">
-              Somatório do capital investido em todas as posições.
-            </p>
-          </div>
-
-          <div className="bg-[#111] border border-gray-800 p-5 rounded-2xl shadow-xl">
-            <div className="flex items-center gap-3 text-gray-400 mb-2">
-              <TrendingUp className="w-5 h-5 text-green-500" />
-              <h3 className="font-semibold text-sm">Best performer</h3>
-            </div>
-            {portfolioStats.bestPerformer ? (
-              <>
-                <p className="text-sm font-semibold text-white">
-                  {portfolioStats.bestPerformer.name} ({portfolioStats.bestPerformer.symbol})
-                </p>
-                <p className={`mt-1 text-lg font-extrabold ${portfolioStats.bestPerformer.profitLossPct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {portfolioStats.bestPerformer.profitLossPct >= 0 ? '+' : ''}
-                  {portfolioStats.bestPerformer.profitLossPct.toFixed(2)}%
-                </p>
-              </>
-            ) : (
-              <p className="text-xs text-gray-500">Adicione ativos para ver o destaque.</p>
-            )}
-          </div>
-
-          <div className="bg-[#111] border border-gray-800 p-5 rounded-2xl shadow-xl">
-            <div className="flex items-center gap-3 text-gray-400 mb-2">
-              <TrendingDown className="w-5 h-5 text-red-500" />
-              <h3 className="font-semibold text-sm">Worst performer</h3>
-            </div>
-            {portfolioStats.worstPerformer ? (
-              <>
-                <p className="text-sm font-semibold text-white">
-                  {portfolioStats.worstPerformer.name} ({portfolioStats.worstPerformer.symbol})
-                </p>
-                <p className={`mt-1 text-lg font-extrabold ${portfolioStats.worstPerformer.profitLossPct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {portfolioStats.worstPerformer.profitLossPct >= 0 ? '+' : ''}
-                  {portfolioStats.worstPerformer.profitLossPct.toFixed(2)}%
-                </p>
-              </>
-            ) : (
-              <p className="text-xs text-gray-500">Adicione ativos para ver o destaque.</p>
-            )}
-          </div>
-        </div>}
-
-        {/* ÁREA DE GRÁFICOS (modo normal) */}
-        {!zenMode && showCharts && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-            <div className="bg-[#111] border border-gray-800 rounded-2xl p-5 shadow-xl flex flex-col">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm font-semibold text-white">Histórico</p>
-                <div className="flex gap-1">
-                  {['24h', '7d', '30d', '90d', 'Tudo'].map((label) => (
-                    <button
-                      key={label}
-                      type="button"
-                      className={`px-2 py-1 rounded-full text-[11px] ${
-                        label === '30d'
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-400 hover:text-white hover:bg-[#1b1b1b]'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex-1 rounded-xl border border-gray-800 bg-gradient-to-br from-red-500/10 via-transparent to-blue-500/10 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-60">
-                  <div className="w-full h-full bg-[radial-gradient(circle_at_0_0,#ef4444_0,transparent_50%),radial-gradient(circle_at_100%_100%,#3b82f6_0,transparent_55%)]" />
-                </div>
-                <div className="relative h-40 flex items-center justify-center">
-                  <p className="text-xs text-gray-500">
-                    Gráfico histórico detalhado será ligado à API.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-[#111] border border-gray-800 rounded-2xl p-5 shadow-xl flex flex-col">
-              <p className="text-sm font-semibold text-white mb-4">
-                Desempenho cumulativo vs BTC
-              </p>
-              <div className="flex-1 rounded-xl border border-gray-800 bg-gradient-to-br from-emerald-500/5 via-transparent to-yellow-500/10 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-60">
-                  <div className="w-full h-full bg-[repeating-linear-gradient(135deg,rgba(255,255,255,0.02)_0,rgba(255,255,255,0.02)_4px,transparent_4px,transparent_8px)]" />
-                </div>
-                <div className="relative h-40 flex flex-col items-center justify-center gap-2">
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className="w-3 h-1.5 rounded-full bg-emerald-400" />{' '}
-                    <span className="text-gray-400">Portfólio</span>
-                    <span className="w-3 h-1.5 rounded-full bg-yellow-400" />{' '}
-                    <span className="text-gray-400">BTC</span>
-                  </div>
-                  <p className="text-xs text-gray-500 text-center max-w-xs">
-                    Espaço reservado para comparar a curva de lucro acumulado com a referência de
-                    mercado.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-[#111] border border-gray-800 rounded-2xl p-5 shadow-xl flex flex-col">
-              <p className="text-sm font-semibold text-white mb-4">Alocação por ativo</p>
-              <div className="flex items-center gap-4">
-                <div className="relative w-32 h-32">
-                  <div className="absolute inset-0 rounded-full bg-[#0b0b0b] border border-gray-800" />
-                  <div className="absolute inset-3 rounded-full bg-gradient-to-br from-blue-500/40 via-emerald-400/30 to-purple-500/40 blur-[2px]" />
-                  <div className="absolute inset-7 rounded-full bg-[#0b0b0b]" />
-                </div>
-                <div className="flex-1 space-y-2">
-                  {portfolioStats.enrichedAssets.slice(0, 4).map((asset) => (
-                    <div key={asset.id} className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ backgroundColor: asset.color }}
-                        />
-                        <span className="text-gray-300">
-                          {asset.name} ({asset.symbol})
-                        </span>
-                      </div>
-                      <span className="text-gray-400">
-                        {(
-                          (asset.currentValue / (portfolioStats.totalValue || 1)) *
-                          100
-                        ).toFixed(1)}
-                        %
-                      </span>
-                    </div>
-                  ))}
-                  {portfolioStats.enrichedAssets.length === 0 && (
-                    <p className="text-xs text-gray-500">
-                      Adicione ativos para visualizar a alocação.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TABELA DE ATIVOS */}
-        <div className="bg-[#111] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-800 bg-[#151515]">
-                  <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Ativo
-                  </th>
-                  <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Preço
-                  </th>
-                  {!zenMode && (
-                    <>
-                      <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">1h%</th>
-                      <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">24h%</th>
-                      <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">7d%</th>
-                    </>
-                  )}
-                  <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Holdings
-                  </th>
-                  <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Preço médio
-                  </th>
-                  <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Lucro / Perda
-                  </th>
-                  <th className="p-4 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800/50">
-                {portfolioStats.enrichedAssets.length === 0 ? (
-                  <tr>
-                    <td colSpan={zenMode ? 6 : 9} className="p-8 text-center text-gray-500">
-                      <AlertCircle className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                      <p>O seu portfólio está vazio.</p>
-                      <p className="text-sm mt-1">
-                        Clique em &quot;Adicionar transação&quot; para começar.
-                      </p>
-                    </td>
-                  </tr>
-                ) : (
-                  portfolioStats.enrichedAssets.map((asset) => (
-                    <tr key={asset.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
-                            style={{ backgroundColor: asset.color }}
-                          >
-                            {asset.symbol[0]}
-                          </div>
-                          <div>
-                            <p className="font-bold text-white">{asset.name}</p>
-                            <p className="text-xs text-gray-500 font-mono">
-                              {asset.symbol} • {asset.amount}{' '}
-                              {asset.symbol}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <p className="font-bold text-white">
-                          $
-                          {asset.currentPrice.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 6,
-                          })}
-                        </p>
-                      </td>
-                      {!zenMode && (
-                        <>
-                          <td className="p-4">
-                            <span className="text-xs text-gray-600">—</span>
-                          </td>
-                          <td className="p-4">
-                            <p className={`text-xs font-semibold ${asset.change24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                              {asset.change24h >= 0 ? '+' : ''}{asset.change24h?.toFixed(2)}%
-                            </p>
-                          </td>
-                          <td className="p-4">
-                            <span className="text-xs text-gray-600">—</span>
-                          </td>
-                        </>
-                      )}
-                      <td className="p-4">
-                        <p className="font-bold text-white">
-                          $
-                          {asset.currentValue.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {asset.amount}{' '}
-                          {asset.symbol}
-                        </p>
-                      </td>
-                      <td className="p-4">
-                        <p className="text-xs text-gray-400">
-                          $
-                          {asset.averageBuyPrice.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 6,
-                          })}
-                        </p>
-                      </td>
-                      <td className="p-4">
-                        <p
-                          className={`font-bold text-sm ${
-                            asset.profitLoss >= 0 ? 'text-green-500' : 'text-red-500'
-                          }`}
-                        >
-                          {asset.profitLoss >= 0 ? '+' : ''}
-                          $
-                          {asset.profitLoss.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </p>
-                        <p
-                          className={`text-xs font-medium ${
-                            asset.profitLossPct >= 0 ? 'text-green-500' : 'text-red-500'
-                          }`}
-                        >
-                          {asset.profitLossPct >= 0 ? '+' : ''}
-                          {asset.profitLossPct.toFixed(2)}%
-                        </p>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleEditAsset(asset)}
-                            className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-colors outline-none focus:ring-2 focus:ring-blue-500 select-none"
-                            title="Editar ativo"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => handleRemoveAsset(asset.id)}
-                            className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors outline-none focus:ring-2 focus:ring-blue-500 select-none"
-                            title="Remover ativo"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* SECÇÃO OPCIONAL PARA DADOS ON-CHAIN (quando implementados no web3Api) */}
-        {onChainTokens && onChainTokens.length > 0 && (
-          <div className="mt-10 bg-[#111] border border-gray-800 rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Wallet className="w-5 h-5 text-blue-400" />
-                <h3 className="text-lg font-semibold text-white">Visão on-chain das carteiras</h3>
-              </div>
-            </div>
+            />
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-800 bg-[#151515]">
-                    <th className="p-3 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                      Token
-                    </th>
-                    <th className="p-3 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                      Quantidade
-                    </th>
-                    <th className="p-3 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                      Valor (USD)
-                    </th>
-                    <th className="p-3 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">
-                      Ação
-                    </th>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Token</th>
+                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Quantidade</th>
+                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Valor USD</th>
+                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-widest" style={{ color: '#6B7280' }}>Acao</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800/50">
+                <tbody>
                   {onChainTokens.map((token) => {
-                    const alreadyAdded = portfolioAssets.some(a => a.symbol?.toUpperCase() === token.symbol?.toUpperCase());
+                    const alreadyAdded = Array.isArray(portfolioAssets)
+                      ? portfolioAssets.some(
+                          (a) => a.symbol?.toUpperCase() === token.symbol?.toUpperCase()
+                        )
+                      : false;
+
                     return (
-                      <tr key={token.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="p-3">
+                      <tr
+                        key={token.id}
+                        className="transition-colors"
+                        style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        <td className="px-6 py-4">
                           <div className="flex flex-col">
-                            <span className="font-bold text-white">{token.symbol}</span>
-                            <span className="text-xs text-gray-500">{token.name}</span>
+                            <span className="font-semibold text-text-primary">{token.symbol}</span>
+                            <span className="text-xs text-text-tertiary">{token.name}</span>
                           </div>
                         </td>
-                        <td className="p-3">
-                          <span className="font-mono text-sm text-gray-100">
+                        <td className="px-6 py-4 text-right">
+                          <span className="font-mono text-sm text-text-primary">
                             {token.amount?.toLocaleString('en-US', {
                               minimumFractionDigits: 4,
                               maximumFractionDigits: 8,
                             })}
                           </span>
                         </td>
-                        <td className="p-3">
-                          <span className="font-mono text-sm text-gray-100">
+                        <td className="px-6 py-4 text-right">
+                          <span className="font-mono text-sm text-text-primary">
                             {typeof token.valueUsd === 'number'
-                              ? `$${token.valueUsd.toLocaleString('en-US', {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}`
-                              : '—'}
+                              ? `$${fmt.usd(token.valueUsd)}`
+                              : '-'}
                           </span>
                         </td>
-                        <td className="p-3 text-right">
+                        <td className="px-6 py-4 text-right">
                           <button
                             onClick={() => handleAddOnChainToken(token)}
-                            disabled={alreadyAdded || isLookingUp === token.id}
-                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed outline-none"
+                            disabled={alreadyAdded || addingOnChain.isLooking === token.id}
+                            className="px-3 py-1.5 text-xs font-bold rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed outline-none"
+                            style={{
+                              background: 'rgba(0,255,239,0.08)',
+                              color: '#00FFEF',
+                              border: '1px solid rgba(0,255,239,0.15)',
+                            }}
+                            title={alreadyAdded ? 'Ja adicionado' : 'Adicionar ao portfolio'}
                           >
-                            {isLookingUp === token.id ? (
-                              <Loader2 className="w-3 h-3 animate-spin inline" />
-                            ) : alreadyAdded ? 'Adicionado' : '+ Portfólio'}
+                            {addingOnChain.isLooking === token.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : alreadyAdded ? (
+                              'Adicionado'
+                            ) : (
+                              '+ Adicionar'
+                            )}
                           </button>
                         </td>
                       </tr>
@@ -1035,74 +510,126 @@ export default function Portfolio() {
               </table>
             </div>
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
-      {/* MODAL ADICIONAR/EDITAR ATIVO */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#151515] border border-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <h2 className="text-2xl font-bold text-white mb-6">{isEditingAsset ? 'Editar Ativo' : 'Adicionar Transação'}</h2>
-            
-            <form onSubmit={handleAddAsset} className="space-y-4">
+      {/* ========== MODAL ADICIONAR/EDITAR ATIVO ========== */}
+      {modal.isOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }}
+        >
+          <div
+            className="relative w-full max-w-md p-8 overflow-hidden"
+            style={{
+              background: 'rgba(15,17,23,0.9)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '20px',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+            }}
+          >
+            <div
+              className="absolute top-0 left-0 right-0"
+              style={{
+                height: '1px',
+                background:
+                  'linear-gradient(to right, transparent, rgba(0,255,239,0.5), rgba(26,111,212,0.3))',
+              }}
+            />
+            <h2 className="text-2xl font-black text-text-primary mb-6">
+              {modal.isEditing ? 'Editar Ativo' : 'Adicionar Ativo'}
+            </h2>
+
+            <form onSubmit={handleAddAsset} className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-400 mb-2">Moeda</label>
-                <select 
-                  value={selectedCoin}
-                  onChange={(e) => setSelectedCoin(e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition-colors appearance-none"
+                <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  Moeda
+                </label>
+                <select
+                  value={modal.selectedCoin}
+                  onChange={(e) =>
+                    dispatch({
+                      type: PORTFOLIO_ACTIONS.SET_FORM_FIELD,
+                      payload: { field: 'selectedCoin', value: e.target.value },
+                    })
+                  }
+                  className="w-full bg-bg-tertiary border border-border-subtle rounded-lg px-4 py-3 text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 focus-visible:border-cyan transition-all appearance-none"
                 >
-                  {SUPPORTED_COINS.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} ({c.symbol})</option>
+                  {SUPPORTED_COINS.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.symbol})
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-400 mb-2">Quantidade Comprada</label>
-                <input 
+                <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  Quantidade Comprada
+                </label>
+                <input
                   type="number"
                   step="any"
                   min="0"
                   required
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  value={modal.amount}
+                  onChange={(e) =>
+                    dispatch({
+                      type: PORTFOLIO_ACTIONS.SET_FORM_FIELD,
+                      payload: { field: 'amount', value: e.target.value },
+                    })
+                  }
                   placeholder="Ex: 0.5"
-                  className="w-full bg-[#0a0a0a] border border-gray-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 transition-colors"
+                  className="w-full bg-bg-tertiary border border-border-subtle rounded-lg px-4 py-3 text-text-primary placeholder-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 focus-visible:border-cyan transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-400 mb-2">Preço Médio de Compra (USD)</label>
+                <label className="block text-sm font-semibold text-text-secondary mb-2">
+                  Preco Medio de Compra (USD)
+                </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                  <input 
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary font-semibold">
+                    $
+                  </span>
+                  <input
                     type="number"
                     step="any"
                     min="0"
                     required
-                    value={buyPrice}
-                    onChange={(e) => setBuyPrice(e.target.value)}
+                    value={modal.buyPrice}
+                    onChange={(e) =>
+                      dispatch({
+                        type: PORTFOLIO_ACTIONS.SET_FORM_FIELD,
+                        payload: { field: 'buyPrice', value: e.target.value },
+                      })
+                    }
                     placeholder="Ex: 60000"
-                    className="w-full bg-[#0a0a0a] border border-gray-700 rounded-xl pl-8 pr-4 py-3 text-white focus:border-blue-500 transition-colors"
+                    className="w-full bg-bg-tertiary border border-border-subtle rounded-lg pl-8 pr-4 py-3 text-text-primary placeholder-text-tertiary focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 focus-visible:border-cyan transition-all"
                   />
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-8 pt-4 border-t border-gray-800">
+              <div className="flex gap-3 mt-8 pt-4 border-t border-border-subtle">
                 <button
                   type="button"
                   onClick={handleCancelModal}
-                  className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-300 hover:bg-gray-800 transition-colors outline-none focus:ring-2 focus:ring-blue-500 select-none"
+                  className="flex-1 px-4 py-3 rounded-lg font-bold text-text-secondary bg-bg-quaternary hover:bg-bg-quaternary/80 transition-all outline-none focus-visible:ring-2 focus-visible:ring-cyan/50"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  disabled={isSaving}
-                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 outline-none focus:ring-2 focus:ring-blue-500 select-none"
+                  disabled={modal.isSaving}
+                  className="flex-1 bg-cyan text-bg px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 hover:shadow-cyan"
                 >
-                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Gravar Ativo'}
+                  {modal.isSaving ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    'Guardar'
+                  )}
                 </button>
               </div>
             </form>
@@ -1110,32 +637,95 @@ export default function Portfolio() {
         </div>
       )}
 
-      {/* MODAL: CONFIRMAR IMPORTAÇÃO ON-CHAIN */}
-      {addingOnChainToken && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#151515] border border-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <h2 className="text-2xl font-bold text-white mb-6">Adicionar ao Portfólio</h2>
-            <div className="space-y-4">
-              <div className="bg-[#0a0a0a] p-4 rounded-xl border border-gray-800 space-y-2">
-                <p className="text-sm text-gray-400">Token: <span className="text-white font-bold">{addingOnChainToken.symbol}</span></p>
-                <p className="text-sm text-gray-400">Nome: <span className="text-white">{addingOnChainToken.name}</span></p>
-                <p className="text-sm text-gray-400">Quantidade: <span className="text-white font-mono">{addingOnChainToken.amount.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 8 })}</span></p>
-                <p className="text-sm text-gray-400">CoinGecko ID: <span className="text-blue-400 font-mono text-xs">{addingOnChainToken.coinId}</span></p>
+      {/* ========== MODAL: CONFIRMAR IMPORTACAO ON-CHAIN ========== */}
+      {addingOnChain.token && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }}
+        >
+          <div
+            className="relative w-full max-w-md p-8 overflow-hidden"
+            style={{
+              background: 'rgba(15,17,23,0.9)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '20px',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+            }}
+          >
+            <div
+              className="absolute top-0 left-0 right-0"
+              style={{
+                height: '1px',
+                background:
+                  'linear-gradient(to right, transparent, rgba(0,255,239,0.5), rgba(26,111,212,0.3))',
+              }}
+            />
+            <h2 className="text-2xl font-black text-text-primary mb-6">
+              Adicionar ao Portfolio
+            </h2>
+            <div className="space-y-5">
+              <div
+                className="p-5 space-y-3"
+                style={{
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: '12px',
+                }}
+              >
+                <div>
+                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1">
+                    Token
+                  </p>
+                  <p className="text-text-primary font-bold text-lg">
+                    {addingOnChain.token.symbol}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1">
+                    Nome
+                  </p>
+                  <p className="text-text-primary">{addingOnChain.token.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1">
+                    Quantidade
+                  </p>
+                  <p className="text-text-primary font-mono">
+                    {addingOnChain.token.amount.toLocaleString('en-US', {
+                      minimumFractionDigits: 4,
+                      maximumFractionDigits: 8,
+                    })}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest mb-1">
+                    CoinGecko ID
+                  </p>
+                  <p className="text-cyan font-mono text-xs">{addingOnChain.token.coinId}</p>
+                </div>
               </div>
-              <p className="text-xs text-gray-500">O ativo será adicionado com preço médio $0. Pode editar depois.</p>
+              <p className="text-xs text-text-tertiary bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
+                O ativo sera adicionado com preco medio $0. Pode editar depois.
+              </p>
               <div className="flex gap-3 mt-6">
                 <button
-                  onClick={() => setAddingOnChainToken(null)}
-                  className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-300 hover:bg-gray-800 transition-colors outline-none"
+                  onClick={() => dispatch({ type: PORTFOLIO_ACTIONS.ONCHAIN_CLEAR })}
+                  className="flex-1 px-4 py-3 rounded-lg font-bold text-text-secondary bg-bg-quaternary hover:bg-bg-quaternary/80 transition-all outline-none focus-visible:ring-2 focus-visible:ring-cyan/50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSaveOnChainAsset}
-                  disabled={isSaving}
-                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white px-4 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-50 outline-none"
+                  disabled={modal.isSaving}
+                  className="flex-1 bg-cyan text-bg px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed outline-none focus-visible:ring-2 focus-visible:ring-cyan/50 hover:shadow-cyan"
                 >
-                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirmar'}
+                  {modal.isSaving ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    'Confirmar'
+                  )}
                 </button>
               </div>
             </div>
@@ -1143,5 +733,25 @@ export default function Portfolio() {
         </div>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Portfolio — page component (public export)
+// ---------------------------------------------------------------------------
+
+/**
+ * Portfolio — page-level component.
+ *
+ * Mounts PortfolioProvider which owns all Firestore/price/on-chain state,
+ * then renders PortfolioContent which consumes that context.
+ *
+ * @returns {React.ReactElement}
+ */
+export default function Portfolio() {
+  return (
+    <PortfolioProvider>
+      <PortfolioContent />
+    </PortfolioProvider>
   );
 }

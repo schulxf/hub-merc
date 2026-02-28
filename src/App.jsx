@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { auth } from './lib/firebase';
@@ -7,8 +8,10 @@ import { Loader2 } from 'lucide-react';
 
 // Importação dos componentes
 import DashboardLayout from './components/layout/DashboardLayout';
-import Auth from './pages/Auth';
+import Landing from './pages/Landing';
+import Login from './pages/Login';
 import { GlobalErrorBoundary } from './components/ui/ErrorBoundary';
+import { PrivacyProvider } from './contexts/PrivacyContext';
 
 function AppContent() {
   const [user, setUser] = useState(null);
@@ -35,21 +38,49 @@ function AppContent() {
     );
   }
 
-  // O "Guarda-Costas": Se não houver utilizador logado, mostra o ecrã de Auth.
-  if (!user) {
-    return <Auth />;
-  }
+  return (
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
 
-  // Se houver utilizador, mostra o Dashboard completo da Mercurius
-  return <DashboardLayout />;
+      {/* Protected Routes */}
+      {user ? (
+        <Route
+          path="/dashboard/*"
+          element={
+            <PrivacyProvider>
+              <DashboardLayout />
+            </PrivacyProvider>
+          }
+        />
+      ) : (
+        <Route path="/dashboard/*" element={<Navigate to="/login" replace />} />
+      )}
+
+      {/* Redirect to login if accessing dashboard without auth */}
+      <Route path="*" element={user ? <Navigate to="/dashboard" replace /> : <Navigate to="/" replace />} />
+    </Routes>
+  );
 }
 
 export default function App() {
   return (
-    <GlobalErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <AppContent />
-      </QueryClientProvider>
-    </GlobalErrorBoundary>
+    <>
+      <style>{`
+        /* 🎨 Cyan custom cursor */
+        html, body, * {
+          cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="%2300FFEF" opacity="0.9"/><circle cx="12" cy="12" r="7" fill="none" stroke="%2300FFEF" stroke-width="1" opacity="0.5"/></svg>') 12 12, auto;
+        }
+      `}</style>
+
+      <GlobalErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <Router>
+            <AppContent />
+          </Router>
+        </QueryClientProvider>
+      </GlobalErrorBoundary>
+    </>
   );
 }

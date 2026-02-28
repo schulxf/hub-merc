@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mercurius Hub — Comprehensive Technical Reference</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: #f5f7fa;
+      color: #2d3748;
+      line-height: 1.6;
+    }
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 3rem;
+      text-align: center;
+    }
+    header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+    .section {
+      background: white;
+      border-radius: 8px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    section h2 {
+      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
+      color: #667eea;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 0.5rem;
+    }
+    section h3 {
+      font-size: 1.3rem;
+      margin: 1.5rem 0 1rem;
+      color: #764ba2;
+    }
+    pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1rem;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    code {
+      background: #f5f7fa;
+      padding: 0.2rem 0.5rem;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 0.9rem;
+    }
+    pre code { background: transparent; padding: 0; }
+    .api-endpoint {
+      background: #f7fafc;
+      border-left: 4px solid #4299e1;
+      padding: 1.5rem;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
+    .api-endpoint h4 {
+      color: #667eea;
+      margin-bottom: 0.5rem;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 0.95rem;
+    }
+    .method {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 3px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin-right: 0.5rem;
+    }
+    .method-get { background: #c6f6d5; color: #22543d; }
+    .method-post { background: #bee3f8; color: #2c5282; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+    }
+    th {
+      background: #667eea;
+      color: white;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+    }
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    tr:hover { background: #f7fafc; }
+    ul, ol { margin-left: 1.5rem; margin-bottom: 1rem; }
+    li { margin-bottom: 0.5rem; }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .card {
+      background: #f7fafc;
+      border-left: 3px solid #4299e1;
+      padding: 1rem;
+      border-radius: 4px;
+    }
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      header h1 { font-size: 1.8rem; }
+    }
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid #e2e8f0;
+      color: #718096;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔧 Technical Reference Guide</h1>
+    <p>Complete API, Architecture, and Development Reference | Mercurius Hub</p>
+  </header>
+
+  <div class="container">
+    <!-- ARCHITECTURE LAYERS -->
+    <section class="section">
+      <h2>🏗️ Architecture Layers</h2>
+
+      <h3>1. Data Layer (Firestore + Storage)</h3>
+      <div class="card">
+        <p><strong>Firestore Collections:</strong></p>
+        <ul>
+          <li><code>users/{uid}/portfolio</code> — User assets (symbol, amount, buyPrice)</li>
+          <li><code>users/{uid}/wallets</code> — Connected wallet addresses</li>
+          <li><code>users/{uid}/preferences</code> — User settings</li>
+          <li><code>users/{uid}/portfolio_snapshots/{date}</code> — Daily portfolio value snapshots</li>
+          <li><code>users/{uid}/airdrops_progress/{airdropId}</code> — Completed airdrop tasks</li>
+          <li><code>airdrops/{id}</code> — Airdrop guides (public collection)</li>
+          <li><code>settings/permissions</code> — Global RBAC rules</li>
+          <li><code>settings/calendar_events</code> — Global calendar events (TGE, launches)</li>
+        </ul>
+      </div>
+
+      <h3>2. Services Layer (Business Logic)</h3>
+      <pre><code>// Core services
+src/services/web3Api.js           → Wallet balancing, token lookup
+src/services/aiService.js         → Portfolio analysis (mocked/Cloud Function)
+src/services/swapService.js       → 1inch integration, quote fetching
+src/services/opportunityAnalyzer.js → Drift detection algorithm
+src/services/pricesService.js     → CoinGecko price fetching
+src/services/walletsService.js    → Wallet data aggregation</code></pre>
+
+      <h3>3. State Management (Context + Hooks + TanStack Query)</h3>
+      <pre><code>// Global contexts
+src/components/portfolio/PortfolioContext.jsx
+  → portfolioAssets, livePrices, onChainTokens, isLoading
+
+src/contexts/AiCopilotContext.jsx
+  → messages, isStreaming, error
+
+// TanStack Query for async state
+src/hooks/useWalletBalances.js
+src/hooks/useCryptoPrices.js
+src/hooks/useSwapQuote.js</code></pre>
+
+      <h3>4. Components Layer (React 19 + Tailwind)</h3>
+      <pre><code>// Feature components
+src/components/portfolio/   → Portfolio sub-components (15+)
+src/components/ai/         → AI Copilot chat (10+)
+src/components/swap/       → Swap widget (5+)
+src/components/layout/     → Sidebar, Header, Layouts
+src/components/ui/         → Shared UI (Buttons, Modals, etc)</code></pre>
+
+      <h3>5. External API Layer</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>API</th>
+            <th>Purpose</th>
+            <th>Endpoint</th>
+            <th>Auth</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1inch</strong></td>
+            <td>DEX quotes, swaps</td>
+            <td>api.1inch.io/v5.0/{chainId}</td>
+            <td>API Key (free)</td>
+          </tr>
+          <tr>
+            <td><strong>Moralis</strong></td>
+            <td>Wallet balances</td>
+            <td>api.moralis.io</td>
+            <td>API Key</td>
+          </tr>
+          <tr>
+            <td><strong>CoinGecko</strong></td>
+            <td>Crypto prices</td>
+            <td>api.coingecko.com/api/v3</td>
+            <td>None (free tier)</td>
+          </tr>
+          <tr>
+            <td><strong>OpenAI</strong></td>
+            <td>Portfolio analysis</td>
+            <td>api.openai.com/v1/chat/completions</td>
+            <td>API Key (Cloud Function only)</td>
+          </tr>
+          <tr>
+            <td><strong>Cloudinary</strong></td>
+            <td>Image hosting</td>
+            <td>api.cloudinary.com</td>
+            <td>Cloud name, API key</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- CORE SERVICES API -->
+    <section class="section">
+      <h2>📡 Core Services API Reference</h2>
+
+      <h3>1. aiService.js — Portfolio Analysis</h3>
+      <div class="api-endpoint">
+        <h4>analyzePortfolioWithAI(portfolioData, userQuestion)</h4>
+        <p><strong>Purpose:</strong> Get AI analysis and recommendations for portfolio</p>
+        <pre><code>// Input
+const portfolioData = {
+  assets: [
+    { name: 'Bitcoin', symbol: 'BTC', amount: 0.5, currentValue: 21500 },
+    { name: 'Ethereum', symbol: 'ETH', amount: 5, currentValue: 9500 }
+  ],
+  totalValue: 31000,
+  allocationByAsset: { BTC: 69%, ETH: 31% }
+};
+
+const userQuestion = "Should I rebalance?";
+
+// Output (mocked)
+{
+  analysis: "Based on your portfolio... (streaming response)",
+  recommendations: [
+    { action: "HOLD", asset: "BTC", rationale: "..." },
+    { action: "INCREASE", asset: "ETH", rationale: "..." }
+  ],
+  tokensUsed: 342
+}</code></pre>
+      </div>
+
+      <h3>2. swapService.js — DEX Aggregation</h3>
+      <div class="api-endpoint">
+        <h4>getSwapQuote(tokenIn, tokenOut, amountIn)</h4>
+        <p><strong>Purpose:</strong> Fetch 1inch swap quote with gas estimation</p>
+        <pre><code>// Input
+tokenIn = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" // ETH
+tokenOut = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" // USDC
+amountIn = "1000000000000000000" // 1 ETH in wei
+
+// Output
+{
+  toAmount: "1850000000", // 1850 USDC
+  estimatedGas: "150000",
+  gasPrice: "20",
+  priceImpact: 0.2, // 0.2%
+  protocols: ["0x Protocol v4", "Uniswap v3"]
+}</code></pre>
+      </div>
+
+      <div class="api-endpoint">
+        <h4>calculateSlippageAmount(amount, slippagePercent)</h4>
+        <p><strong>Purpose:</strong> Calculate minimum output amount with slippage</p>
+        <pre><code>// Input
+amount = 1000000000 // USDC to receive
+slippagePercent = 0.5 // 0.5%
+
+// Output: 995000000 (1000000000 * (1 - 0.005))</code></pre>
+      </div>
+
+      <div class="api-endpoint">
+        <h4>estimateSwapGasInUsd(gasUnits, gasPrice, ethPrice)</h4>
+        <p><strong>Purpose:</strong> Convert gas units to USD value</p>
+        <pre><code>// Input
+gasUnits = 150000
+gasPrice = "20" // gwei
+ethPrice = 2150
+
+// Output
+{
+  gasUsd: 6.45,
+  gasEth: 0.003,
+  percentOfSwap: 0.35 // if swap is 1850 USDC
+}</code></pre>
+      </div>
+
+      <h3>3. opportunityAnalyzer.js — Rebalancing Detection</h3>
+      <div class="api-endpoint">
+        <h4>findRebalancingOpportunities(portfolioAssets, benchmark)</h4>
+        <p><strong>Purpose:</strong> Detect portfolio drift and suggest rebalancing</p>
+        <pre><code>// Input
+portfolioAssets = [
+  { symbol: 'BTC', target: 40, actual: 45 },
+  { symbol: 'ETH', target: 40, actual: 30 },
+  { symbol: 'USDC', target: 20, actual: 25 }
+];
+
+// Output
+[
+  {
+    symbol: 'ETH',
+    driftPercent: -10, // 10% below target
+    score: 8.5,
+    action: 'INCREASE',
+    amountNeeded: 2500
+  },
+  ...
+]</code></pre>
+      </div>
+    </section>
+
+    <!-- HOOKS API -->
+    <section class="section">
+      <h2>🪝 Custom Hooks Reference</h2>
+
+      <h3>useSwapQuote(params)</h3>
+      <pre><code>const { quote, isLoading, error, refetch } = useSwapQuote({
+  tokenIn: '0xeeee...',
+  tokenOut: '0xa0b8...',
+  amountIn: '1000000000000000000'
+});
+
+// Auto-refetches every 30 seconds
+// Caches results for 5 minutes</code></pre>
+
+      <h3>useOpportunityAnalyzer(portfolioAssets)</h3>
+      <pre><code>const { opportunities, isAnalyzing, error } = useOpportunityAnalyzer(portfolioAssets);
+
+// Returns ranked opportunities for rebalancing
+// Updates when portfolioAssets change</code></pre>
+
+      <h3>useAiChat(portfolioContext)</h3>
+      <pre><code>const { sendMessage, isLoading } = useAiChat();
+
+// Usage
+await sendMessage("What should I do with my portfolio?");
+
+// Internally:
+// 1. Serializes portfolio data
+// 2. Calls analyzePortfolioWithAI
+// 3. Streams response character-by-character
+// 4. Adds to AiCopilotContext</code></pre>
+
+      <h3>useCryptoPrices(coinIds)</h3>
+      <pre><code>const { prices, isLoading, error } = useCryptoPrices(['bitcoin', 'ethereum']);
+
+// Returns: { bitcoin: { usd: 42500, usd_24h_change: 2.3 }, ... }
+// Auto-refetches every 60 seconds</code></pre>
+
+      <h3>useWalletBalances(wallets, trigger)</h3>
+      <pre><code>const { tokens, isLoading, error, warning } = useWalletBalances(wallets, syncTrigger);
+
+// Only fetches when trigger changes
+// Useful for manual "Sync" button clicks</code></pre>
+    </section>
+
+    <!-- DATA SCHEMAS -->
+    <section class="section">
+      <h2>🗂️ Zod Data Schemas</h2>
+
+      <h3>Portfolio Asset Schema</h3>
+      <pre><code>export const PortfolioAssetSchema = z.object({
+  coinId: z.string(),
+  symbol: z.string(),
+  name: z.string(),
+  amount: z.number().positive(),
+  averageBuyPrice: z.number().positive(),
+  color: z.string().regex(/^#[0-9A-F]{6}$/i),
+  currentValue: z.number().optional(),
+  updatedAt: z.string().datetime()
+});</code></pre>
+
+      <h3>1inch Quote Schema</h3>
+      <pre><code>export const OneInchQuoteSchema = z.object({
+  toAmount: z.string(),
+  estimatedGas: z.string(),
+  gasPrice: z.string().optional(),
+  priceImpact: z.number().optional(),
+  protocols: z.array(z.string()).optional()
+});</code></pre>
+
+      <h3>AI Analysis Schema</h3>
+      <pre><code>export const PortfolioAnalysisSchema = z.object({
+  analysis: z.string(),
+  recommendations: z.array(z.object({
+    action: z.enum(['BUY', 'SELL', 'HOLD', 'INCREASE', 'DECREASE']),
+    asset: z.string(),
+    rationale: z.string()
+  })),
+  tokensUsed: z.number().optional()
+});</code></pre>
+    </section>
+
+    <!-- COMPONENT PATTERNS -->
+    <section class="section">
+      <h2>💅 Component Patterns</h2>
+
+      <h3>Memoized Component with Hooks</h3>
+      <pre><code>/**
+ * MyComponent — Memoized component with hooks and error handling.
+ * @param {Object} props - Component props
+ * @returns {React.ReactElement}
+ */
+const MyComponent = React.memo(function MyComponent({ data, onAction }) {
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuthContext();
+
+  const handleClick = useCallback(async () => {
+    setLoading(true);
+    try {
+      await onAction(data);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [data, onAction]);
+
+  return (
+    &lt;div className="component"&gt;
+      &lt;button onClick={handleClick} disabled={loading}&gt;
+        {loading ? 'Loading...' : 'Action'}
+      &lt;/button&gt;
+    &lt;/div&gt;
+  );
+});</code></pre>
+
+      <h3>Hook with TanStack Query</h3>
+      <pre><code>/**
+ * useMyData — Fetch and cache data with TanStack Query.
+ * @param {string} id - Resource ID
+ * @returns {Object} Query result with data, loading, error
+ */
+export function useMyData(id) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['myData', id],
+    queryFn: () => fetchMyData(id),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    enabled: !!id,
+    retry: 2
+  });
+
+  return { data, isLoading, error: error?.message };
+}</code></pre>
+
+      <h3>Service with Zod Validation</h3>
+      <pre><code>/**
+ * getPortfolioData — Fetch portfolio with Zod validation.
+ * @returns {Promise&lt;Object&gt;} Portfolio data or null if invalid
+ */
+export async function getPortfolioData(uid) {
+  const response = await fetch(`/api/portfolio/${uid}`);
+  const raw = await response.json();
+
+  // Validate against schema
+  const result = PortfolioSchema.safeParse(raw);
+
+  if (!result.success) {
+    console.warn('Invalid portfolio data:', result.error.flatten());
+    return null;
+  }
+
+  return result.data;
+}</code></pre>
+    </section>
+
+    <!-- SECURITY -->
+    <section class="section">
+      <h2>🔒 Security Implementation</h2>
+
+      <h3>RBAC (Role-Based Access Control)</h3>
+      <pre><code>// Firestore Security Rules
+match /users/{userId} {
+  // Only user can read/write their own data
+  allow read, write: if request.auth.uid == userId;
+
+  match /portfolio {page_id} {
+    // Portfolio only accessible if tier == 'pro'
+    allow read, write: if
+      request.auth.uid == userId &&
+      get(/databases/$(database)/documents/users/$(userId)).data.tier == 'pro';
+  }
+}</code></pre>
+
+      <h3>API Key Management</h3>
+      <ul>
+        <li>✓ Never store API keys in frontend code</li>
+        <li>✓ Use environment variables (.env.local)</li>
+        <li>✓ OpenAI key only in Cloud Functions (server-side)</li>
+        <li>✓ 1inch and CoinGecko keys in environment variables</li>
+        <li>✓ Rotate keys regularly</li>
+      </ul>
+
+      <h3>User Data Isolation</h3>
+      <ul>
+        <li>✓ All Firestore paths start with /users/{uid}</li>
+        <li>✓ Security Rules enforce user ownership</li>
+        <li>✓ Portfolio data never exposed to other users</li>
+        <li>✓ Wallet addresses hashed before storage (future)</li>
+      </ul>
+    </section>
+
+    <!-- DEPLOYMENT -->
+    <section class="section">
+      <h2>🚀 Deployment Configuration</h2>
+
+      <h3>Environment Variables</h3>
+      <pre><code>VITE_FIREBASE_PROJECT_ID=hubmercurius
+VITE_FIREBASE_API_KEY=***
+VITE_FIREBASE_AUTH_DOMAIN=hubmercurius.firebaseapp.com
+VITE_FIREBASE_STORAGE_BUCKET=hubmercurius.appspot.com
+
+VITE_ONEINCH_API_URL=https://api.1inch.io/v5.0/1
+VITE_MORALIS_API_KEY=***
+VITE_CLOUDINARY_CLOUD_NAME=***</code></pre>
+
+      <h3>Build & Deploy</h3>
+      <pre><code>// Local development
+npm run dev
+
+// Production build
+npm run build      # Creates dist/
+
+// Deploy to Firebase Hosting
+firebase deploy --only hosting
+
+// Deploy Cloud Functions (Blaze only)
+cd functions
+firebase deploy --only functions</code></pre>
+
+      <h3>Performance Checklist</h3>
+      <ul>
+        <li>✓ Code splitting with React.lazy()</li>
+        <li>✓ Component memoization with React.memo</li>
+        <li>✓ TanStack Query caching (5-10 min stale time)</li>
+        <li>✓ Tailwind CSS tree-shaking</li>
+        <li>✓ Bundle size monitoring</li>
+        <li>✓ Lighthouse scores > 80</li>
+      </ul>
+    </section>
+
+    <!-- TESTING -->
+    <section class="section">
+      <h2>🧪 Testing Guide</h2>
+
+      <h3>Running Tests</h3>
+      <pre><code>// Run all tests
+npm test
+
+// Run with coverage
+npm test -- --coverage
+
+// Run specific file
+npm test -- swapService.test.js
+
+// Watch mode
+npm test -- --watch</code></pre>
+
+      <h3>Test Coverage Targets</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Target</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Services (web3Api, swapService)</td>
+            <td>70%+</td>
+            <td>✓ In progress</td>
+          </tr>
+          <tr>
+            <td>Hooks (useSwapQuote, useWalletBalances)</td>
+            <td>60%+</td>
+            <td>✓ In progress</td>
+          </tr>
+          <tr>
+            <td>Components (UI, containers)</td>
+            <td>60%+</td>
+            <td>✓ In progress</td>
+          </tr>
+          <tr>
+            <td>Overall</td>
+            <td>60% minimum</td>
+            <td>✓ Configured</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>
+      <p>Mercurius Hub Technical Reference — Complete API & Architecture Guide | Last Updated: February 2026</p>
+    </footer>
+  </div>
+</body>
+</html>

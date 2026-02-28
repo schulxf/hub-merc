@@ -2,8 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Suppress browser default focus outline - we use custom focus rings */
+/* Modern focus handling - no visible outline by default, use focus-visible for keyboard */
 :focus {
+  outline: none;
+}
+
+/* Keyboard-only focus indicator using cyan */
+:focus-visible {
+  outline: 2px solid #00FFEF;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove focus visible from inputs (use custom styling instead) */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
   outline: none;
 }
 

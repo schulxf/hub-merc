@@ -1,3 +1,21 @@
+# HubMercurius
+
+## RBAC (Role-Based Access Control)
+
+Access control uses the `tier` field stored directly in the Firestore `users/{uid}` document.
+No Cloud Functions or Firebase Blaze plan is required.
+
+- `tier: 'admin'` — full access, admin panel
+- `tier: 'assessor'` — access to the assessor dashboard and assigned client data
+- `tier: 'pro'` / `tier: 'vip'` — premium feature access
+- `tier: 'free'` (default) — base access only
+
+The `useAuthRole()` hook maps these tier values to a `role` string (`'admin'`, `'assessor'`, or `'user'`) for backwards compatibility with components that gate access by role.
+
+If the project is upgraded to the Firebase Blaze plan in the future, Cloud Functions can be added to sync the `tier` field to Firebase Auth custom claims (`role`), enabling JWT-level access control without Firestore reads on every rule evaluation.
+
+---
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

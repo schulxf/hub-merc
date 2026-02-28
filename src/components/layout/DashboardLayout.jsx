@@ -7,18 +7,23 @@ import { auth, db } from '../../lib/firebase';
 import { signOut } from 'firebase/auth';
 import { doc, onSnapshot, collection, query, where, limit, updateDoc } from 'firebase/firestore';
 import { useUserProfile } from '../../hooks/useUserProfile';
-import AirdropHub from '../../pages/AirdropHub';
-import AirdropRouter from '../../pages/AirdropDetail';
-import Portfolio from '../../pages/Portfolio';
-import Wallets from '../../pages/Wallets';
-import DeFiPositions from '../../pages/DeFiPositions';
+import { useAuthRole } from '../../hooks/useAuthRole';
+import PrivacyModeToggle from '../auth/PrivacyModeToggle';
+// Importações normais para páginas leves
 import RemindersPage from '../../pages/Reminders';
-import DeFiToolsLanding from '../../pages/DeFiToolsLanding';
 
 // Lazy imports para páginas pesadas (reduz bundle inicial)
 const AdminPanel = lazy(() => import('../../pages/AdminPanel'));
-const InsightsFeed = lazy(() => import('../../pages/InsightsFeed'));
+const AirdropHub = lazy(() => import('../../pages/AirdropHub'));
+const AirdropRouter = lazy(() => import('../../pages/AirdropDetail'));
+const Portfolio = lazy(() => import('../../pages/Portfolio'));
+const Wallets = lazy(() => import('../../pages/Wallets'));
+const DeFiPositions = lazy(() => import('../../pages/DeFiPositions'));
+const DeFiToolsLanding = lazy(() => import('../../pages/DeFiToolsLanding'));
 const AssessorDashboard = lazy(() => import('../../pages/AssessorDashboard'));
+const AiCopilot = lazy(() => import('../../pages/AiCopilot'));
+const Dashboard = lazy(() => import('../../pages/Dashboard'));
+const InsightsFeed = lazy(() => import('../../pages/InsightsFeed'));
 const VideoLibrary = lazy(() => import('../../pages/VideoLibrary'));
 
 // Fallback de loading para Suspense
@@ -34,7 +39,7 @@ const PremiumLockScreen = ({ featureName }) => (
   <div className="animate-in fade-in flex flex-col items-center justify-center py-20 px-4 text-center mt-12">
     <div className="w-24 h-24 bg-blue-500/10 border border-blue-500/20 rounded-3xl flex items-center justify-center mb-8 relative shadow-[0_0_50px_rgba(59,130,246,0.15)]">
        <Lock className="w-10 h-10 text-blue-500" />
-       <div className="absolute -top-3 -right-3 bg-[#111] border border-gray-700 p-1.5 rounded-full">
+       <div className="absolute -top-3 -right-3 bg-[#111] border border-white/[0.07] p-1.5 rounded-full">
          <Crown className="w-5 h-5 text-yellow-500" />
        </div>
     </div>
@@ -49,7 +54,7 @@ const PremiumLockScreen = ({ featureName }) => (
 );
 
 const DashboardLayout = () => {
-  const [currentRoute, setCurrentRoute] = useState('airdrops');
+  const [currentRoute, setCurrentRoute] = useState('dashboard');
   const [selectedAirdrop, setSelectedAirdrop] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({ pro: true, defi: true });
@@ -66,7 +71,8 @@ const DashboardLayout = () => {
 
   // 1. Estados de Permissão Dinâmicos
   const { profile, isLoadingProfile } = useUserProfile();
-  const userTier = profile?.tier || 'free'; 
+  const userTier = profile?.tier || 'free';
+  const { role: authRole } = useAuthRole();
   
   // Guardamos as configurações do Admin Panel aqui
   const [appPermissions, setAppPermissions] = useState({
@@ -171,6 +177,7 @@ const DashboardLayout = () => {
   const getCurrentRoutePermKey = () => {
     // Mapeamento manual rápido
     const map = {
+      'dashboard': 'free',
       'portfolio': 'portfolio',
       'carteiras-pro': 'portfolio',
       'analises': 'portfolio',
@@ -183,6 +190,8 @@ const DashboardLayout = () => {
       'insights': 'insights',
       'academia': 'academia',
       'assessor-dashboard': null,  // handled by tier check directly
+      'assessor': 'free',
+      'ia-copilot': 'portfolio'
     };
     return map[currentRoute] || 'free';
   };
@@ -232,28 +241,32 @@ const DashboardLayout = () => {
   return (
     <div className="min-h-screen bg-[#07090C] flex flex-col md:flex-row text-gray-200 font-sans selection:bg-blue-500/30">
       
-      <aside className="hidden md:flex flex-col w-72 bg-[#0B0D12] border-r border-gray-800/80 sticky top-0 h-screen p-6 z-30">
-        <SidebarContent 
-           currentRoute={currentRoute} 
-           navigateTo={navigateTo} 
-           expandedMenus={expandedMenus} 
-           toggleMenu={toggleMenu} 
+      <aside className="hidden md:flex flex-col w-72 bg-[#0B0D12] border-r border-white/[0.07] sticky top-0 h-screen p-6 z-30">
+        <SidebarContent
+           currentRoute={currentRoute}
+           navigateTo={navigateTo}
+           expandedMenus={expandedMenus}
+           toggleMenu={toggleMenu}
            userEmail={auth.currentUser?.email}
            userTier={userTier}
+           authRole={authRole}
            hasAccess={hasAccess} // Passamos a função de verificação para a Sidebar
            onLogout={handleLogoutClick}
         />
       </aside>
 
-      <header className="md:hidden flex items-center justify-between p-4 bg-[#0B0D12] border-b border-gray-800 sticky top-0 z-40 shadow-sm">
+      <header className="md:hidden flex items-center justify-between p-4 bg-[#0B0D12] border-b border-white/[0.07] sticky top-0 z-40 shadow-sm">
         <div className="flex items-center gap-4">
           <button onClick={() => setIsMobileMenuOpen(true)} className="p-1 -ml-1 text-gray-400 hover:text-white outline-none">
             <Menu className="w-6 h-6" />
           </button>
           <img src="https://i.imgur.com/QAqVuyN.png" alt="Mercurius" className="h-5" />
         </div>
-        <div className="w-8 h-8 rounded-md bg-[#181C25] border border-gray-700 flex items-center justify-center text-white font-bold text-xs uppercase">
-          {auth.currentUser?.email ? auth.currentUser.email[0] : 'M'}
+        <div className="flex items-center gap-2">
+          <PrivacyModeToggle />
+          <div className="w-8 h-8 rounded-md bg-[#181C25] border border-white/[0.07] flex items-center justify-center text-white font-bold text-xs uppercase">
+            {auth.currentUser?.email ? auth.currentUser.email[0] : 'M'}
+          </div>
         </div>
       </header>
 
@@ -264,13 +277,14 @@ const DashboardLayout = () => {
             <button onClick={() => setIsMobileMenuOpen(false)} className="absolute top-5 right-5 text-gray-500 hover:text-white outline-none">
               <X className="w-6 h-6" />
             </button>
-            <SidebarContent 
-               currentRoute={currentRoute} 
-               navigateTo={navigateTo} 
-               expandedMenus={expandedMenus} 
-               toggleMenu={toggleMenu} 
+            <SidebarContent
+               currentRoute={currentRoute}
+               navigateTo={navigateTo}
+               expandedMenus={expandedMenus}
+               toggleMenu={toggleMenu}
                userEmail={auth.currentUser?.email}
                userTier={userTier}
+               authRole={authRole}
                hasAccess={hasAccess}
                onLogout={handleLogoutClick}
             />
@@ -341,6 +355,12 @@ const DashboardLayout = () => {
           ) : (
             /* ROTAS LIBERADAS */
             <>
+              {currentRoute === 'dashboard' && (
+                <Dashboard
+                  onNavigatePortfolio={() => navigateTo('portfolio')}
+                  onNavigateReminders={() => navigateTo('reminders')}
+                />
+              )}
               {currentRoute === 'airdrops' && <AirdropHub onSelect={openAirdrop} />}
               {currentRoute === 'airdrop-detail' && selectedAirdrop && <AirdropRouter airdrop={selectedAirdrop} onBack={() => navigateTo('airdrops')} />}
               {currentRoute === 'defi-positions' && <DeFiPositions />}
@@ -350,6 +370,8 @@ const DashboardLayout = () => {
               {currentRoute === 'defi-tools' && <DeFiToolsLanding />}
               {currentRoute === 'insights' && <InsightsFeed />}
               {currentRoute === 'academia' && <VideoLibrary />}
+              {currentRoute === 'assessor' && <AssessorDashboard />}
+              {currentRoute === 'ia-copilot' && <AiCopilot />}
 
               {['analises', 'suporte', 'carteiras-recomendadas', 'research'].includes(currentRoute) && (
                 <MockPage title={getRouteTitle(currentRoute)} />
@@ -451,7 +473,7 @@ const DashboardLayout = () => {
 
       {isLogoutModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" role="dialog" aria-modal="true">
-          <div className="bg-[#151515] border border-gray-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="bg-[#151515] border border-white/[0.07] rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="p-6 text-center">
               <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
                 <LogOut className="w-8 h-8 text-red-500 ml-1" />
@@ -461,7 +483,7 @@ const DashboardLayout = () => {
                 Tem a certeza que deseja sair da sua conta? Terá de iniciar sessão novamente para aceder.
               </p>
               <div className="flex gap-3">
-                <button onClick={() => setIsLogoutModalOpen(false)} className="flex-1 bg-[#1A1D24] hover:bg-gray-800 text-white font-bold py-3 rounded-lg transition-colors border border-gray-700 outline-none">Cancelar</button>
+                <button onClick={() => setIsLogoutModalOpen(false)} className="flex-1 bg-[#1A1D24] hover:bg-gray-800 text-white font-bold py-3 rounded-lg transition-colors border border-white/[0.07] outline-none">Cancelar</button>
                 <button onClick={confirmLogout} className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition-colors outline-none">Sair</button>
               </div>
             </div>

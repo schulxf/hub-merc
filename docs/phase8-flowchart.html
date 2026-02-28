@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phase 8 - Process Flowchart</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);
+      color: #e0e0e0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    header h1 {
+      font-size: 2.2em;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      font-size: 1em;
+      opacity: 0.9;
+    }
+
+    .flowchart-section {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 30px;
+      backdrop-filter: blur(10px);
+    }
+
+    .flowchart-section h2 {
+      color: #64b5f6;
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+
+    .flowchart-container {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+
+    svg {
+      max-width: 100%;
+      height: auto;
+      min-width: 800px;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9em;
+    }
+
+    .legend-shape {
+      width: 30px;
+      height: 30px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .legend-shape.start-end {
+      border-radius: 15px;
+      background: #81c784;
+    }
+
+    .legend-shape.process {
+      background: #42a5f5;
+    }
+
+    .legend-shape.decision {
+      background: #ffb74d;
+      clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    }
+
+    .legend-shape.error {
+      background: #e57373;
+    }
+
+    .description {
+      background: rgba(102, 126, 234, 0.1);
+      border: 1px solid #667eea;
+      border-radius: 8px;
+      padding: 15px;
+      color: #b3e5fc;
+      font-size: 0.9em;
+      margin-top: 15px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: #666;
+      font-size: 0.9em;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      margin-top: 40px;
+    }
+
+    .note {
+      background: rgba(255, 193, 7, 0.1);
+      border-left: 3px solid #ffb74d;
+      padding: 12px;
+      margin-top: 15px;
+      color: #ffe0b2;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🔄 Phase 8 - Process Flowcharts</h1>
+      <p>AI Copilot Chat Flow and Swap Widget Flow Visualizations</p>
+    </header>
+
+    <!-- AI Copilot Flow -->
+    <div class="flowchart-section">
+      <h2>💬 AI Copilot Chat Flow</h2>
+
+      <div class="flowchart-container">
+        <svg viewBox="0 0 900 1100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+              <polygon points="0 0, 10 3, 0 6" fill="#667eea"/>
+            </marker>
+            <marker id="arrow-error" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+              <polygon points="0 0, 10 3, 0 6" fill="#e57373"/>
+            </marker>
+          </defs>
+
+          <!-- START -->
+          <rect x="350" y="20" width="200" height="50" rx="25" fill="#81c784" stroke="#81c784" stroke-width="2"/>
+          <text x="450" y="50" text-anchor="middle" font-size="14" font-weight="bold" fill="white">START</text>
+
+          <!-- Arrow -->
+          <path d="M 450,70 L 450,110" stroke="#667eea" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Open AiCopilot Page -->
+          <rect x="350" y="110" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="135" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Open AiCopilot</text>
+          <text x="450" y="155" text-anchor="middle" font-size="11" fill="#e3f2fd">Page</text>
+
+          <!-- Arrow -->
+          <path d="M 450,170 L 450,210" stroke="#667eea" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Load Portfolio Data -->
+          <rect x="350" y="210" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="235" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Load Portfolio Data</text>
+          <text x="450" y="255" text-anchor="middle" font-size="11" fill="#e3f2fd">(PortfolioContext)</text>
+
+          <!-- Arrow -->
+          <path d="M 450,270 L 450,310" stroke="#667eea" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Chat Interface Ready -->
+          <rect x="350" y="310" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="335" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Chat Interface</text>
+          <text x="450" y="355" text-anchor="middle" font-size="11" fill="#e3f2fd">Ready</text>
+
+          <!-- Arrow -->
+          <path d="M 450,370 L 450,410" stroke="#667eea" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- User Types Message -->
+          <rect x="350" y="410" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="435" text-anchor="middle" font-size="13" font-weight="bold" fill="white">User Types</text>
+          <text x="450" y="455" text-anchor="middle" font-size="11" fill="#e3f2fd">Message</text>
+
+          <!-- Arrow -->
+          <path d="M 450,470 L 450,510" stroke="#667eea" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Click Send Button -->
+          <rect x="350" y="510" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="535" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Click Send</text>
+          <text x="450" y="555" text-anchor="middle" font-size="11" fill="#e3f2fd">Button</text>
+
+          <!-- Arrow -->
+          <path d="M 450,570 L 450,610" stroke="#667eea" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Call useAiChat Hook -->
+          <rect x="350" y="610" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="635" text-anchor="middle" font-size="13" font-weight="bold" fill="white">useAiChat Hook</text>
+          <text x="450" y="655" text-anchor="middle" font-size="11" fill="#e3f2fd">Called</text>
+
+          <!-- Arrow -->
+          <path d="M 450,670 L 450,710" stroke="#667eea" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Serialize Portfolio Data -->
+          <rect x="350" y="710" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="735" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Serialize</text>
+          <text x="450" y="755" text-anchor="middle" font-size="11" fill="#e3f2fd">Portfolio Data</text>
+
+          <!-- Arrow -->
+          <path d="M 450,770 L 450,810" stroke="#667eea" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Call AI Service -->
+          <rect x="350" y="810" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="835" text-anchor="middle" font-size="13" font-weight="bold" fill="white">analyzePortfolio</text>
+          <text x="450" y="855" text-anchor="middle" font-size="11" fill="#e3f2fd">Service Call</text>
+
+          <!-- Arrow - Success Path -->
+          <path d="M 450,870 L 450,910" stroke="#667eea" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Success Label -->
+          <text x="460" y="890" font-size="11" fill="#81c784">✓ Success</text>
+
+          <!-- Arrow - Error Path (to left) -->
+          <path d="M 350,840 L 100,840 L 100,920 L 350,920" stroke="#e57373" stroke-width="2" marker-end="url(#arrow-error)" fill="none"/>
+          <text x="180" y="830" font-size="11" fill="#e57373">✗ Error</text>
+
+          <!-- ERROR BOX -->
+          <rect x="350" y="900" width="200" height="60" fill="#e57373" stroke="#e57373" stroke-width="2" opacity="0.8"/>
+          <text x="450" y="925" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Error Banner</text>
+          <text x="450" y="945" text-anchor="middle" font-size="10" fill="#ffcdd2">Display Error</text>
+
+          <!-- Error Retry Arrow -->
+          <path d="M 350,930 L 150,930 L 150,440 L 350,440" stroke="#e57373" stroke-width="2" marker-end="url(#arrow-error)" fill="none" stroke-dasharray="5,5"/>
+          <text x="140" y="680" font-size="10" fill="#e57373" transform="rotate(-90 140 680)">Retry</text>
+
+          <!-- Response Received -->
+          <rect x="350" y="910" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="935" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Response</text>
+          <text x="450" y="955" text-anchor="middle" font-size="11" fill="#e3f2fd">Received</text>
+
+          <!-- Arrow -->
+          <path d="M 450,970 L 450,1010" stroke="#667eea" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Display with Streaming -->
+          <rect x="350" y="1010" width="200" height="60" fill="#9c27b0" stroke="#ab47bc" stroke-width="2"/>
+          <text x="450" y="1035" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Stream Message</text>
+          <text x="450" y="1055" text-anchor="middle" font-size="10" fill="#e1bee7">(20ms per char)</text>
+
+          <!-- Additional Detail Text -->
+          <text x="680" y="1050" font-size="11" fill="#b3e5fc">Show FollowUp</text>
+          <text x="680" y="1065" font-size="11" fill="#b3e5fc">Suggestions</text>
+
+          <!-- Arrow -->
+          <path d="M 450,1070 L 450,1110" stroke="#667eea" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Decision Diamond - More Questions? -->
+          <path d="M 450,1110 L 550,1180 L 450,1250 L 350,1180 Z" fill="#ffb74d" stroke="#ffb74d" stroke-width="2"/>
+          <text x="450" y="1180" text-anchor="middle" font-size="12" font-weight="bold" fill="white">More</text>
+          <text x="450" y="1200" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Questions?</text>
+
+          <!-- YES Path (Loop back) -->
+          <path d="M 350,1180 L 150,1180 L 150,440 L 350,440" stroke="#81c784" stroke-width="2" marker-end="url(#arrow)" fill="none"/>
+          <text x="140" y="810" font-size="11" fill="#81c784" font-weight="bold">YES</text>
+
+          <!-- NO Path (to End) -->
+          <path d="M 450,1250 L 450,1310" stroke="#667eea" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="470" y="1280" font-size="11" fill="#667eea" font-weight="bold">NO</text>
+
+          <!-- END -->
+          <rect x="350" y="1310" width="200" height="50" rx="25" fill="#81c784" stroke="#81c784" stroke-width="2"/>
+          <text x="450" y="1340" text-anchor="middle" font-size="14" font-weight="bold" fill="white">END</text>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-shape start-end"></div>
+          <span>Start/End</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-shape process"></div>
+          <span>Process</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-shape decision"></div>
+          <span>Decision</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-shape error"></div>
+          <span>Error Path</span>
+        </div>
+      </div>
+
+      <div class="description">
+        <strong>Flow Description:</strong> User opens AI Copilot page → Portfolio data loads via PortfolioContext → Chat interface ready → User types message → Clicks send → useAiChat hook serializes portfolio data → Calls analyzePortfolioWithAI service → On success: Display response with character-by-character streaming (20ms per character) + show follow-up suggestions → User can ask more questions (loop back) or end session. On error: Display error banner with retry option.
+      </div>
+
+      <div class="note">
+        <strong>Note:</strong> Response displays with blinking cursor animation. Streaming occurs at 20ms per character for smooth UX. Follow-up suggestions are Portuguese recommendations for portfolio analysis, rebalancing, etc.
+      </div>
+    </div>
+
+    <!-- Swap Flow -->
+    <div class="flowchart-section">
+      <h2>💱 Swap Widget Flow</h2>
+
+      <div class="flowchart-container">
+        <svg viewBox="0 0 900 1000" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+              <polygon points="0 0, 10 3, 0 6" fill="#667eea"/>
+            </marker>
+            <marker id="arrow-error2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+              <polygon points="0 0, 10 3, 0 6" fill="#e57373"/>
+            </marker>
+          </defs>
+
+          <!-- START -->
+          <rect x="350" y="20" width="200" height="50" rx="25" fill="#81c784" stroke="#81c784" stroke-width="2"/>
+          <text x="450" y="50" text-anchor="middle" font-size="14" font-weight="bold" fill="white">START</text>
+
+          <!-- Arrow -->
+          <path d="M 450,70 L 450,110" stroke="#667eea" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <!-- Open Swap Widget -->
+          <rect x="350" y="110" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="135" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Open Swap</text>
+          <text x="450" y="155" text-anchor="middle" font-size="11" fill="#e3f2fd">Widget</text>
+
+          <!-- Arrow -->
+          <path d="M 450,170 L 450,210" stroke="#667eea" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <!-- Select Tokens -->
+          <rect x="350" y="210" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="235" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Select Tokens</text>
+          <text x="450" y="255" text-anchor="middle" font-size="11" fill="#e3f2fd">(In/Out)</text>
+
+          <!-- Arrow -->
+          <path d="M 450,270 L 450,310" stroke="#667eea" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <!-- Enter Amount -->
+          <rect x="350" y="310" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="335" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Enter Amount</text>
+          <text x="450" y="355" text-anchor="middle" font-size="11" fill="#e3f2fd">(or click Max)</text>
+
+          <!-- Arrow -->
+          <path d="M 450,370 L 450,410" stroke="#667eea" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <!-- Fetch Quote from 1inch -->
+          <rect x="350" y="410" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="435" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Fetch Quote from</text>
+          <text x="450" y="455" text-anchor="middle" font-size="11" fill="#e3f2fd">1inch API</text>
+
+          <!-- Arrow - Success -->
+          <path d="M 450,470 L 450,510" stroke="#667eea" stroke-width="2" marker-end="url(#arrow2)"/>
+          <text x="460" y="490" font-size="11" fill="#81c784">✓ Success</text>
+
+          <!-- Arrow - Error -->
+          <path d="M 350,440 L 100,440 L 100,580 L 350,580" stroke="#e57373" stroke-width="2" marker-end="url(#arrow-error2)" fill="none"/>
+          <text x="180" y="430" font-size="11" fill="#e57373">✗ Error</text>
+
+          <!-- ERROR BOX -->
+          <rect x="350" y="560" width="200" height="60" fill="#e57373" stroke="#e57373" stroke-width="2" opacity="0.8"/>
+          <text x="450" y="585" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Error Display</text>
+          <text x="450" y="605" text-anchor="middle" font-size="10" fill="#ffcdd2">Retry Option</text>
+
+          <!-- Error Retry Arrow -->
+          <path d="M 350,590 L 100,590 L 100,335 L 350,335" stroke="#e57373" stroke-width="2" marker-end="url(#arrow-error2)" fill="none" stroke-dasharray="5,5"/>
+
+          <!-- Display Quote Details -->
+          <rect x="350" y="510" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="535" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Display Quote</text>
+          <text x="450" y="555" text-anchor="middle" font-size="11" fill="#e3f2fd">Details</text>
+
+          <!-- Arrow -->
+          <path d="M 450,570 L 450,610" stroke="#667eea" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <!-- Calculate Estimates -->
+          <rect x="350" y="610" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="635" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Calculate</text>
+          <text x="450" y="655" text-anchor="middle" font-size="11" fill="#e3f2fd">Price Impact & Gas</text>
+
+          <!-- Arrow -->
+          <path d="M 450,670 L 450,710" stroke="#667eea" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <!-- Adjust Slippage -->
+          <rect x="350" y="710" width="200" height="60" fill="#9c27b0" stroke="#ab47bc" stroke-width="2"/>
+          <text x="450" y="735" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Adjust Slippage</text>
+          <text x="450" y="755" text-anchor="middle" font-size="11" fill="#e1bee7">(Optional)</text>
+
+          <!-- Arrow -->
+          <path d="M 450,770 L 450,810" stroke="#667eea" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <!-- Review & Confirm -->
+          <rect x="350" y="810" width="200" height="60" fill="#42a5f5" stroke="#42a5f5" stroke-width="2"/>
+          <text x="450" y="835" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Review &</text>
+          <text x="450" y="855" text-anchor="middle" font-size="11" fill="#e3f2fd">Confirm</text>
+
+          <!-- Arrow -->
+          <path d="M 450,870 L 450,910" stroke="#667eea" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <!-- Decision: Execute? -->
+          <path d="M 450,910 L 550,980 L 450,1050 L 350,980 Z" fill="#ffb74d" stroke="#ffb74d" stroke-width="2"/>
+          <text x="450" y="980" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Execute</text>
+          <text x="450" y="1000" text-anchor="middle" font-size="12" font-weight="bold" fill="white">Swap?</text>
+
+          <!-- YES Path: Send to MetaMask -->
+          <path d="M 550,980 L 700,980 L 700,980 L 700,350" stroke="#81c784" stroke-width="2" marker-end="url(#arrow2)" fill="none"/>
+          <text x="710" y="975" font-size="11" fill="#81c784" font-weight="bold">YES</text>
+          <text x="710" y="650" font-size="11" fill="#81c784">MetaMask</text>
+          <text x="710" y="665" font-size="11" fill="#81c784">Sign & Send</text>
+
+          <!-- NO Path: Cancel -->
+          <path d="M 350,980 L 150,980" stroke="#667eea" stroke-width="2" marker-end="url(#arrow2)"/>
+          <text x="200" y="975" font-size="11" fill="#667eea" font-weight="bold">NO</text>
+
+          <!-- Cancel/Back -->
+          <rect x="50" y="950" width="100" height="60" fill="#e57373" stroke="#e57373" stroke-width="2"/>
+          <text x="100" y="975" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Cancel</text>
+          <text x="100" y="995" text-anchor="middle" font-size="9" fill="#ffcdd2">Swap</text>
+
+          <!-- Arrow back to END from cancel -->
+          <path d="M 100,950 L 100,150 L 350,150" stroke="#667eea" stroke-width="2" marker-end="url(#arrow2)" fill="none" stroke-dasharray="5,5"/>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-shape start-end"></div>
+          <span>Start/End</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-shape process"></div>
+          <span>Process</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-shape decision"></div>
+          <span>Decision</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-shape error"></div>
+          <span>Error/Cancel</span>
+        </div>
+      </div>
+
+      <div class="description">
+        <strong>Flow Description:</strong> User opens Swap Widget → Selects tokenIn and tokenOut → Enters amount (or uses Max) → Widget fetches quote from 1inch API via useSwapQuote hook → On success: Display quote details, calculate price impact and gas estimate → User can adjust slippage tolerance (0.1%, 0.5%, 1.0%, or custom) → Review swap details → Click Execute button → Send to MetaMask for signing → On error: Show error banner with retry option.
+      </div>
+
+      <div class="note">
+        <strong>Note:</strong> All quotes are cached (TanStack Query) with 30-second stale time. Slippage defaults to 0.5%. Gas estimate shown in USD. Transaction status polled every 2 seconds with 60-second timeout. MetaMask integration handles wallet connection and transaction signing.
+      </div>
+    </div>
+
+    <footer>
+      <p>Phase 8 - Process Flowcharts</p>
+      <p>Mercurius Hub | Generated: February 24, 2026 | Version 1.0.0</p>
+    </footer>
+  </div>
+</body>
+</html>

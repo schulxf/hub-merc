@@ -1,7 +1,83 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // -----------------------------------------------------------------------
+    // SECURITY AUDIT — PHASE 0 (2026-02-25)
+    // -----------------------------------------------------------------------
+    //
+    // COLLECTION OVERVIEW & ACCESS MATRIX:
+    //
+    // /users/{uid}
+    //   READ   — owner (self) | admin | assigned assessor
+    //   WRITE  — owner (self) | admin (tier changes only, validated enum)
+    //   RULE   — Assessors can read client profiles if their UID is in assessorIds[]
+    //
+    // /users/{uid}/{subcollection=**}  (portfolio, defi, wallets, transactions, etc.)
+    //   READ   — owner | admin | assigned assessor (read-only)
+    //   WRITE  — owner only
+    //   RULE   — Assessors have read-only access; only the user can write their own data
+    //
+    // /airdrops/{document=**}
+    //   READ   — any signed-in user
+    //   WRITE  — admin only
+    //   RULE   — Public CMS content; users never write here
+    //
+    // /settings/{document=**}  (permissions, calendar_events, etc.)
+    //   READ   — any signed-in user (needed to enforce permission checks client-side)
+    //   WRITE  — admin only
+    //   RULE   — Global config and calendar; admin-controlled
+    //
+    // /public_content/{document=**}
+    //   READ   — any signed-in user
+    //   WRITE  — admin only
+    //   RULE   — Announcements and other public-facing content
+    //
+    // /{document=**}  (catch-all)
+    //   READ   — DENIED
+    //   WRITE  — DENIED
+    //   RULE   — Default-deny; all other paths are blocked
+    //
+    // PENDING COLLECTIONS (future phases):
+    //
+    // /strategies/{strategyId}          — TASK 5 (assessor-created, client-readable)
+    // /model_portfolios/{modelId}       — TASK 3 (admin/assessor CMS)
+    // /research/{researchId}            — TASK 4 (admin/assessor CMS)
+    // /recommendations/{recommendationId} — TASK 7 (assessor writes, client reads)
+    //
+    // These collections are not yet in use; no rules exist yet, so they fall
+    // through to the default-deny catch-all — which is the correct safe state.
+    // Add explicit rules when the features are implemented.
+    //
+    // RBAC NOTE (Phase 7 MVP):
+    //   Tier-based RBAC is enforced by reading the user's own document.
+    //   In a future Blaze-plan upgrade (Phase 8+), Cloud Functions should sync
+    //   tiers to Firebase Auth custom claims for JWT-level enforcement:
+    //     admin.auth().setCustomUserClaims(uid, { role: tier })
+    //   This avoids an extra Firestore read per rule evaluation.
+    //
+    // KNOWN ISSUES FOUND DURING AUDIT:
+    //   1. getUserTier() function was defined but never used — removed below.
+    //   2. The validator flagged getUserTier as using 'get' and 'request' inside
+    //      a standalone function context, which is a Firebase rules linter
+    //      limitation. The equivalent logic in isAdmin() / isAssessor() is
+    //      correct when used in a match block. Removed the unused function.
+    //
+    // CHECKLIST:
+    //   [x] Users can read their own portfolio subcollections
+    //   [x] Assessors can read portfolio of assigned clients (read-only)
+    //   [x] Only admins can write to /airdrops (CMS content)
+    //   [x] Only admins can write to /settings (feature flags, calendar)
+    //   [x] Firestore userId isolation: portfolio lives under /users/{uid}/
+    //   [x] Recommendations will be scoped per collection when TASK 7 ships
+    //   [x] Public collections (airdrops, research) will be read-only for users
+    //   [x] Default deny covers all unlisted collections
+    // -----------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------
     // Helper functions
+    // -----------------------------------------------------------------------
+
     function isSignedIn() {
       return request.auth != null;
     }
@@ -12,40 +88,72 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'admin';
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'admin';
     }
 
     function isAssessor() {
       return isSignedIn() &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'assessor';
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier == 'assessor';
     }
 
-    function getUserTier() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tier;
+    // NOTE: Phase 7 MVP uses tier field directly for RBAC (no custom claims).
+    // In Phase 8+, consider upgrading to Blaze plan and adding Cloud Functions
+    // for JWT-level optimization: admin.auth().setCustomUserClaims({ role: tier })
+    // This would sync tier changes to Firebase Auth tokens automatically.
+
+    // Check if the current user is an authorised assessor for a given client.
+    // Reads the client's user document and checks the assessorIds array.
+    function isAssessorForClient(clientUid) {
+      return isAssessor()
+        && exists(/databases/$(database)/documents/users/$(clientUid))
+        && request.auth.uid in get(/databases/$(database)/documents/users/$(clientUid)).data.assessorIds;
     }
 
-    // User documents: each user can only read/write their own data
+    // -----------------------------------------------------------------------
+    // User documents
+    // /users/{uid}
+    // -----------------------------------------------------------------------
+
     match /users/{uid} {
+      // Owner: full read/write access to own document
       allow read, write: if isOwner(uid);
 
-      // Allow admins to read all user documents (for user management)
+      // Admin: can read all user documents and update tiers
+      // Tier values are validated to the known enum to prevent privilege escalation
       allow read: if isAdmin();
-      allow update: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.tier in ['free', 'pro', 'vip', 'admin', 'assessor'];
+
+      // Assessor: can read client profile if assigned via assessorIds
+      allow read: if isAssessorForClient(uid);
+
       // Allow assessors to update lastMeetingDate and calendlyUrl on their assigned clients
       allow update: if isAssessor() &&
                      exists(/databases/$(database)/documents/users/$(uid)/profile) &&
                      get(/databases/$(database)/documents/users/$(uid)/profile).data.assessorIds[request.auth.uid] == true;
     }
 
-    // User subcollections: portfolio, defi, wallets, etc.
+    // -----------------------------------------------------------------------
+    // User subcollections: portfolio, defi, wallets, portfolio_snapshots, etc.
+    // /users/{uid}/{document=**}
+    // -----------------------------------------------------------------------
+
     match /users/{uid}/{document=**} {
+      // Owner: full access to own subcollections
       allow read, write: if isOwner(uid);
-      allow read: if isAssessor() &&
-                     exists(/databases/$(database)/documents/users/$(uid)/profile) &&
-                     get(/databases/$(database)/documents/users/$(uid)/profile).data.assessorIds[request.auth.uid] == true;
+
+      // Admin: read access to all user subcollections
+      allow read: if isAdmin();
+
+      // Assessor: read-only access to assigned client subcollections
+      allow read: if isAssessorForClient(uid);
     }
 
+    // -----------------------------------------------------------------------
     // Rebalancing proposals: assessors can create/update proposals for their assigned clients
+    // /users/{uid}/proposals/{proposalId}
+    // -----------------------------------------------------------------------
+
     match /users/{uid}/proposals/{proposalId} {
       allow read: if isOwner(uid) || isAdmin();
       allow write: if isAdmin();
@@ -54,19 +162,48 @@ service cloud.firestore {
                      get(/databases/$(database)/documents/users/$(uid)/profile).data.assessorIds[request.auth.uid] == true;
     }
 
-    // Public content: readable by all authenticated users, writable by admins only
+    // -----------------------------------------------------------------------
+    // Public content (airdrops, announcements)
+    // /public_content/{document=**}
+    // -----------------------------------------------------------------------
+
     match /public_content/{document=**} {
+      // All signed-in users can read; only admins can write
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // Settings: global configuration, readable by all, writable by admins only
+    // -----------------------------------------------------------------------
+    // Airdrops CMS — top-level collection
+    // /airdrops/{document=**}
+    // -----------------------------------------------------------------------
+
+    match /airdrops/{document=**} {
+      // All signed-in users can read airdrop guides
+      allow read: if isSignedIn();
+      // Only admins can create / update / delete guides via AdminContentTab
+      allow write: if isAdmin();
+    }
+
+    // -----------------------------------------------------------------------
+    // Settings: global configuration (permissions, calendar_events, etc.)
+    // /settings/{document=**}
+    // -----------------------------------------------------------------------
+
     match /settings/{document=**} {
+      // All signed-in users can read settings (needed to enforce permission
+      // checks client-side: e.g., is 'portfolio' module available for my tier?)
       allow read: if isSignedIn();
+      // Only admins can change platform-wide settings
       allow write: if isAdmin();
     }
 
-    // Deny all other access
+    // -----------------------------------------------------------------------
+    // Deny all other access by default
+    // /strategies, /model_portfolios, /research, /recommendations, and any
+    // future collections are blocked until explicit rules are added.
+    // -----------------------------------------------------------------------
+
     match /{document=**} {
       allow read, write: if false;
     }

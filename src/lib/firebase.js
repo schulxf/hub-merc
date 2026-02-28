@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, initializeFirestore, persistentLocalCache } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 // Puxamos as chaves seguras do ficheiro .env.local
 const firebaseConfig = {
@@ -15,19 +16,20 @@ const firebaseConfig = {
 // Inicializar o Firebase
 const app = initializeApp(firebaseConfig);
 
-// Inicializar Auth
-export const auth = getAuth(app);
+// Inicializar os serviços que vamos usar
+export const auth = getAuth(app); // Para Login
 
-// Inicializar Firestore com persistência offline
-// Se o dispositivo ficar offline, o Firestore devolve dados do cache local
+// Firestore com offline persistence (PR1 - Infraestrutura)
 let db;
 try {
   db = initializeFirestore(app, {
     localCache: persistentLocalCache(),
   });
 } catch (e) {
-  // Se já foi inicializado, use getFirestore
+  // Se falhar, usar getFirestore() sem cache
   db = getFirestore(app);
 }
-
 export { db };
+
+// Storage para upload de ficheiros
+export const storage = getStorage(app);
