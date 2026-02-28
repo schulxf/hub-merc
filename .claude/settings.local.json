@@ -32,7 +32,10 @@
       "Bash(bash \"C:\\\\Users\\\\Schulx\\\\.claude\\\\plugins\\\\cache\\\\mhattingpete-claude-skills\\\\engineering-workflow-skills\\\\1.2.0\\\\skills\\\\git-pushing\\\\scripts\\\\smart_commit.sh\" \"refactor\\(admin\\): decompose AdminPanel into 5 focused sub-components with lazy loading:*)",
       "Bash(npm test:*)",
       "Bash(git reset:*)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(npm run firebase:validate-rules:*)",
+      "Bash(firebase firestore:indexes:*)",
+      "Bash(firebase use:*)"
     ]
   }
 }

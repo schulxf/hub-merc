@@ -3,7 +3,7 @@ import {
   ChevronDown, ChevronUp, Briefcase, PieChart,
   Activity, Zap, LayoutGrid,
   ArrowRightLeft, Bell, Layers, GraduationCap, LifeBuoy, LogOut, Lock, Shield,
-  Star, BookOpen, Users, Brain, Home
+  Star, BookOpen, Users, Brain, Home, TrendingUp, Lightbulb, Book, Crown, Sparkles, Video
 } from 'lucide-react';
 
 export const MENU_CATEGORIES = [
@@ -36,11 +36,25 @@ export const MENU_CATEGORIES = [
     ]
   },
   {
-    id: 'research',
-    label: 'Research',
+    id: 'conteudo',
+    label: 'Conteúdo',
     icon: BookOpen,
-    isMock: true,
-    permKey: 'free'
+    items: [
+      { id: 'research', label: 'Pesquisas', icon: Book, permKey: 'free' },
+      { id: 'strategies', label: 'Estratégias', icon: TrendingUp, permKey: 'free' },
+      { id: 'portfolios', label: 'Carteiras Modelo', icon: Briefcase, permKey: 'free' },
+      { id: 'recommendations', label: 'Recomendações', icon: Lightbulb, permKey: 'free' },
+    ]
+  },
+  {
+    id: 'vip-consulting',
+    label: 'VIP Consulting',
+    icon: Crown,
+    permKey: 'vip',
+    items: [
+      { id: 'insights', label: 'Insights Exclusivos', icon: Sparkles, permKey: 'vip' },
+      { id: 'academia', label: 'Academia DeFi', icon: Video, permKey: 'vip' },
+    ]
   },
   {
     id: 'cursos',

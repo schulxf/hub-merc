@@ -147,6 +147,42 @@ service cloud.firestore {
     }
 
     // -----------------------------------------------------------------------
+    // VIP Consulting: proposals subcollection
+    // /users/{uid}/proposals/{proposalId}
+    // -----------------------------------------------------------------------
+
+    match /users/{uid}/proposals/{proposalId} {
+      // Owner: can read and acknowledge their proposals
+      allow read, update: if isOwner(uid);
+
+      // Assessor: can create and manage proposals for assigned clients
+      allow create, update: if isAssessor()
+        && isAssessorForClient(uid)
+        && request.resource.data.createdBy == request.auth.uid;
+
+      // Admin: full access to all proposals
+      allow read, write: if isAdmin();
+    }
+
+    // -----------------------------------------------------------------------
+    // VIP Consulting: meetings subcollection
+    // /users/{uid}/meetings/{meetingId}
+    // -----------------------------------------------------------------------
+
+    match /users/{uid}/meetings/{meetingId} {
+      // Owner: can read and manage their meetings
+      allow read, write: if isOwner(uid);
+
+      // Assessor: can create and manage meetings for assigned clients
+      allow create, update: if isAssessor()
+        && isAssessorForClient(uid)
+        && request.resource.data.assessorId == request.auth.uid;
+
+      // Admin: full access to all meetings
+      allow read, write: if isAdmin();
+    }
+
+    // -----------------------------------------------------------------------
     // Public content (airdrops, announcements)
     // /public_content/{document=**}
     // -----------------------------------------------------------------------
