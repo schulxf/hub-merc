@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useMemo, useEffect, Suspense, lazy } from 'react';
-import { Menu, X, LogOut, Lock, Crown, Shield, Loader2 } from 'lucide-react';
+import { Menu, X, LogOut, Lock, Crown, Shield, Loader2, ArrowRight, Calendar, FileText, CheckCircle2 } from 'lucide-react';
 
 import { SidebarContent, MENU_CATEGORIES } from './Sidebar';
 import { MockPage } from '../ui/Shared';
 import { auth, db } from '../../lib/firebase';
 import { signOut } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, limit, updateDoc } from 'firebase/firestore';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useAuthRole } from '../../hooks/useAuthRole';
 import PrivacyModeToggle from '../auth/PrivacyModeToggle';
@@ -23,6 +23,21 @@ const DeFiToolsLanding = lazy(() => import('../../pages/DeFiToolsLanding'));
 const AssessorDashboard = lazy(() => import('../../pages/AssessorDashboard'));
 const AiCopilot = lazy(() => import('../../pages/AiCopilot'));
 const Dashboard = lazy(() => import('../../pages/Dashboard'));
+
+// Importações para páginas consumer (PHASE 3)
+const ResearchHub = lazy(() => import('../../pages/ResearchHub'));
+const ResearchDetail = lazy(() => import('../../pages/ResearchDetail'));
+const StrategiesMarketplace = lazy(() => import('../../pages/StrategiesMarketplace'));
+const ModelPortfoliosPage = lazy(() => import('../../pages/ModelPortfoliosPage'));
+const RecommendationsFeed = lazy(() => import('../../pages/RecommendationsFeed'));
+
+// Importações para VIP Consulting (PHASE 4 novo)
+const InsightsFeed = lazy(() => import('../../pages/InsightsFeed'));
+const VideoLibrary = lazy(() => import('../../pages/VideoLibrary'));
+
+// Importações para DeFi Guides (PHASE 5 novo)
+const DeFiGuidesHub = lazy(() => import('../../pages/DeFiGuidesHub'));
+const DeFiGuideDetail = lazy(() => import('../../pages/DeFiGuideDetail'));
 
 // Fallback de loading para Suspense
 const PageLoader = () => (
@@ -55,8 +70,12 @@ const DashboardLayout = () => {
   const [currentRoute, setCurrentRoute] = useState('dashboard');
   const [selectedAirdrop, setSelectedAirdrop] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [expandedMenus, setExpandedMenus] = useState({ pro: true, defi: true });
+  const [expandedMenus, setExpandedMenus] = useState({ pro: true, defi: true, educacao: false, ferramentas: false });
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  // VIP Consulting states (PHASE 4 novo)
+  const [proposalBanner, setProposalBanner] = useState(null);
+  const [meetingBanner, setMeetingBanner] = useState(null);
 
   // 1. Estados de Permissão Dinâmicos
   const { profile, isLoadingProfile } = useUserProfile();
@@ -79,6 +98,56 @@ const DashboardLayout = () => {
     return () => unsubscribe();
   }, []);
 
+  // 3. Listener para propostas de VIP Consulting (PHASE 4 novo)
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const q = query(
+      collection(db, 'users', auth.currentUser.uid, 'proposals'),
+      where('status', '==', 'pending'),
+      limit(1)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const proposal = snapshot.docs[0].data();
+        setProposalBanner({
+          id: snapshot.docs[0].id,
+          ...proposal
+        });
+      } else {
+        setProposalBanner(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 4. Listener para meetings/triggers (PHASE 4 novo)
+  useEffect(() => {
+    if (!auth.currentUser || userTier !== 'vip') return;
+
+    const q = query(
+      collection(db, 'users', auth.currentUser.uid, 'meetings'),
+      where('status', '==', 'scheduled'),
+      limit(1)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const meeting = snapshot.docs[0].data();
+        setMeetingBanner({
+          id: snapshot.docs[0].id,
+          ...meeting
+        });
+      } else {
+        setMeetingBanner(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [userTier]);
+
   // 3. A Lógica do Guarda-Costas Avançado
   const hasAccess = useCallback((permKey) => {
     if (userTier === 'admin') return true; // Admin acessa TUDO
@@ -99,16 +168,22 @@ const DashboardLayout = () => {
     const map = {
       'dashboard': 'free',
       'portfolio': 'portfolio',
-      'carteiras-pro': 'portfolio',
-      'analises': 'portfolio',
+      'carteiras-recomendadas': 'portfolio',
+      'ia-copilot': 'portfolio',
+      'defi-positions': 'defi',
+      'defi-guides': 'defi',
       'airdrops': 'airdrops',
       'airdrop-detail': 'airdrops',
-      'defi-positions': 'defi',
       'defi-tools': 'defi',
       'reminders': 'reminders',
-      'carteiras-recomendadas': 'portfolio',
+      'research': 'free',
+      'research-detail': 'free',
+      'strategies': 'free',
+      'portfolios': 'free',
+      'recommendations': 'free',
+      'academia': 'free',
       'assessor': 'free',
-      'ia-copilot': 'portfolio'
+      'insights': 'vip'
     };
     return map[currentRoute] || 'free';
   };
@@ -132,6 +207,23 @@ const DashboardLayout = () => {
       alert('Erro ao fazer logout. Por favor, tente novamente.');
       setIsLogoutModalOpen(false);
     }
+  }, []);
+
+  // Handlers para VIP Consulting (PHASE 4 novo)
+  const handleAcknowledgeProposal = useCallback(async () => {
+    if (!proposalBanner || !auth.currentUser) return;
+
+    try {
+      const proposalRef = doc(db, 'users', auth.currentUser.uid, 'proposals', proposalBanner.id);
+      await updateDoc(proposalRef, { acknowledged: true });
+      setProposalBanner(null);
+    } catch (error) {
+      console.error('Erro ao acknowledgear proposta:', error);
+    }
+  }, [proposalBanner]);
+
+  const handleDismissMeetingBanner = useCallback(() => {
+    setMeetingBanner(null);
   }, []);
 
   const navigateTo = useCallback((route) => {
@@ -226,17 +318,35 @@ const DashboardLayout = () => {
                   onNavigateReminders={() => navigateTo('reminders')}
                 />
               )}
-              {currentRoute === 'airdrops' && <AirdropHub onSelect={openAirdrop} />}
-              {currentRoute === 'airdrop-detail' && selectedAirdrop && <AirdropRouter airdrop={selectedAirdrop} onBack={() => navigateTo('airdrops')} />}
-              {currentRoute === 'defi-positions' && <DeFiPositions />}
-              {currentRoute === 'reminders' && <RemindersPage />}
+
+              {/* PRO Pages */}
               {currentRoute === 'portfolio' && <Portfolio />}
-              {currentRoute === 'carteiras-pro' && <Wallets />}
-              {currentRoute === 'defi-tools' && <DeFiToolsLanding />}
-              {currentRoute === 'assessor' && <AssessorDashboard />}
+              {currentRoute === 'carteiras-recomendadas' && <Wallets />}
               {currentRoute === 'ia-copilot' && <AiCopilot />}
 
-              {['analises', 'cursos', 'suporte', 'carteiras-recomendadas', 'research'].includes(currentRoute) && (
+              {/* DEFI Pages */}
+              {currentRoute === 'defi-positions' && <DeFiPositions />}
+              {currentRoute === 'defi-guides' && <DeFiGuidesHub />}
+              {currentRoute === 'airdrops' && <AirdropHub onSelect={openAirdrop} />}
+              {currentRoute === 'airdrop-detail' && selectedAirdrop && <AirdropRouter airdrop={selectedAirdrop} onBack={() => navigateTo('airdrops')} />}
+              {currentRoute === 'defi-tools' && <DeFiToolsLanding />}
+
+              {/* EDUCACAO Pages */}
+              {currentRoute === 'research' && <ResearchHub />}
+              {currentRoute === 'research-detail' && <ResearchDetail />}
+              {currentRoute === 'strategies' && <StrategiesMarketplace />}
+              {currentRoute === 'portfolios' && <ModelPortfoliosPage />}
+              {currentRoute === 'recommendations' && <RecommendationsFeed />}
+              {currentRoute === 'academia' && <VideoLibrary />}
+
+              {/* FERRAMENTAS Pages */}
+              {currentRoute === 'reminders' && <RemindersPage />}
+
+              {/* PHASE 4: VIP Consulting Pages (hidden from menu) */}
+              {currentRoute === 'insights' && <InsightsFeed />}
+              {currentRoute === 'assessor' && <AssessorDashboard />}
+
+              {['analises', 'suporte'].includes(currentRoute) && (
                 <MockPage title={getRouteTitle(currentRoute)} />
               )}
             </>
@@ -259,6 +369,68 @@ const DashboardLayout = () => {
                 <button onClick={() => setIsLogoutModalOpen(false)} className="flex-1 bg-[#1A1D24] hover:bg-gray-800 text-white font-bold py-3 rounded-lg transition-colors border border-white/[0.07] outline-none">Cancelar</button>
                 <button onClick={confirmLogout} className="flex-1 bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-lg transition-colors outline-none">Sair</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PHASE 4: VIP Consulting Proposal Banner */}
+      {proposalBanner && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md animate-in slide-in-from-right duration-300">
+          <div className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/30 rounded-xl p-5 shadow-2xl backdrop-blur-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <h3 className="text-white font-bold flex items-center gap-2 mb-1">
+                  <CheckCircle2 className="w-5 h-5 text-purple-400" />
+                  Proposta de Consulting
+                </h3>
+                <p className="text-sm text-gray-300 mb-3">
+                  {proposalBanner.description || 'Você recebeu uma nova proposta de consulting. Verifique os detalhes.'}
+                </p>
+                <button
+                  onClick={handleAcknowledgeProposal}
+                  className="text-sm bg-purple-600 hover:bg-purple-500 text-white px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Ver Proposta
+                </button>
+              </div>
+              <button
+                onClick={() => setProposalBanner(null)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PHASE 4: VIP Consulting Meeting Banner */}
+      {meetingBanner && (
+        <div className="fixed bottom-6 left-6 z-50 max-w-md animate-in slide-in-from-left duration-300">
+          <div className="bg-gradient-to-r from-cyan-900/40 to-blue-900/40 border border-cyan-500/30 rounded-xl p-5 shadow-2xl backdrop-blur-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <h3 className="text-white font-bold flex items-center gap-2 mb-1">
+                  <Calendar className="w-5 h-5 text-cyan-400" />
+                  Reunião Agendada
+                </h3>
+                <p className="text-sm text-gray-300 mb-2">
+                  {meetingBanner.time && `${new Date(meetingBanner.time).toLocaleDateString('pt-BR')} às ${new Date(meetingBanner.time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
+                </p>
+                <button
+                  onClick={() => navigateTo('insights')}
+                  className="text-sm bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-2"
+                >
+                  Ver Detalhes <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+              <button
+                onClick={handleDismissMeetingBanner}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
