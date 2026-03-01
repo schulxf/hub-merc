@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Plan and documentation files (keep docs/ folder tracked, but exclude root .md planning files)
+PHASE_*.md
+*_PLAN.md
+*_STATUS.md
+*_REPORT.md
+PROGRESS.md
+ROADMAP_*.md
+EXECUTION_PLAN.md
+NEXT_STEPS_*.md
+START_HERE.md
+LOGIN_TESTING_GUIDE.md
