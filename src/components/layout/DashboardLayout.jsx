@@ -318,14 +318,10 @@ const DashboardLayout = () => {
                   onNavigateReminders={() => navigateTo('reminders')}
                 />
               )}
-              {currentRoute === 'airdrops' && <AirdropHub onSelect={openAirdrop} />}
-              {currentRoute === 'airdrop-detail' && selectedAirdrop && <AirdropRouter airdrop={selectedAirdrop} onBack={() => navigateTo('airdrops')} />}
-              {currentRoute === 'defi-positions' && <DeFiPositions />}
-              {currentRoute === 'reminders' && <RemindersPage />}
+
+              {/* PRO Pages */}
               {currentRoute === 'portfolio' && <Portfolio />}
-              {currentRoute === 'carteiras-pro' && <Wallets />}
-              {currentRoute === 'defi-tools' && <DeFiToolsLanding />}
-              {currentRoute === 'assessor' && <AssessorDashboard />}
+              {currentRoute === 'carteiras-recomendadas' && <Wallets />}
               {currentRoute === 'ia-copilot' && <AiCopilot />}
 
               {/* DEFI Pages */}
@@ -343,8 +339,12 @@ const DashboardLayout = () => {
               {currentRoute === 'recommendations' && <RecommendationsFeed />}
               {currentRoute === 'academia' && <VideoLibrary />}
 
+              {/* FERRAMENTAS Pages */}
+              {currentRoute === 'reminders' && <RemindersPage />}
+
               {/* PHASE 4: VIP Consulting Pages (hidden from menu) */}
               {currentRoute === 'insights' && <InsightsFeed />}
+              {currentRoute === 'assessor' && <AssessorDashboard />}
 
               {['analises', 'suporte'].includes(currentRoute) && (
                 <MockPage title={getRouteTitle(currentRoute)} />
