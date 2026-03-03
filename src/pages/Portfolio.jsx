@@ -195,7 +195,7 @@ function PortfolioContent() {
 
   const handleRemoveAsset = useCallback(async (coinId) => {
     if (!auth.currentUser) return;
-    if (!window.confirm('Tem a certeza que deseja remover este ativo?')) return;
+    if (!window.confirm('Tem certeza que deseja remover este ativo?')) return;
 
     try {
       const assetRef = doc(db, 'users', auth.currentUser.uid, 'portfolio', coinId);

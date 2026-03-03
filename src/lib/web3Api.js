@@ -218,7 +218,7 @@ export async function fetchWalletBalances(wallets) {
     return {
       tokens: [],
       raw: null,
-      warning: 'Integração Web3 ainda não configurada. Adicione VITE_MORALIS_API_KEY ao ficheiro .env.local para ativar a leitura on-chain.',
+      warning: 'Integração Web3 ainda não configurada. Adicione VITE_MORALIS_API_KEY ao arquivo .env.local para ativar a leitura on-chain.',
     };
   }
 

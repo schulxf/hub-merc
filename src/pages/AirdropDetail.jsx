@@ -3,7 +3,7 @@ import { CheckCircle2, Circle, ExternalLink, AlertTriangle, ChevronDown, Chevron
 
 // ============================================================================
 // INSTRUÇÕES PARA O VS CODE LOCAL:
-// 1. DESCOMENTE as importações abaixo para ligar aos seus ficheiros reais:
+// 1. DESCOMENTE as importações abaixo para ligar aos seus arquivos reais:
 import { storage } from '../lib/utils';
 import { ExternalBtn, MockPage } from '../components/ui/Shared';
 import { db, auth } from '../lib/firebase';

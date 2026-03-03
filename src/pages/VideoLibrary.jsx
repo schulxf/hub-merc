@@ -116,7 +116,8 @@ function VideoModal({ video, onClose }) {
             <iframe
               src={embedUrl}
               title={video.titulo}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
               allowFullScreen
               className="w-full h-full"
             />
@@ -203,7 +204,7 @@ export default function VideoLibrary() {
           <GraduationCap className="w-12 h-12 text-gray-700 mx-auto mb-4" />
           <p className="text-gray-400 font-semibold">Nenhum vídeo publicado ainda.</p>
           <p className="text-gray-500 text-sm mt-1">
-            A equipa Mercurius adicionará tutoriais DeFi exclusivos em breve.
+            A equipe Mercurius adicionará tutoriais DeFi exclusivos em breve.
           </p>
         </div>
       ) : filtered.length === 0 ? (

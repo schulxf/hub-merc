@@ -69,6 +69,7 @@ const PremiumLockScreen = ({ featureName }) => (
 const DashboardLayout = () => {
   const [currentRoute, setCurrentRoute] = useState('dashboard');
   const [selectedAirdrop, setSelectedAirdrop] = useState(null);
+  const [selectedResearch, setSelectedResearch] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({ pro: true, defi: true, educacao: false, ferramentas: false });
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -239,6 +240,12 @@ const DashboardLayout = () => {
     window.scrollTo(0, 0);
   }, []);
 
+  const openResearch = useCallback((doc) => {
+    setSelectedResearch(doc);
+    setCurrentRoute('research-detail');
+    window.scrollTo(0, 0);
+  }, []);
+
   const getRouteTitle = (routeId) => {
      if (!MENU_CATEGORIES) return 'Funcionalidade Exclusiva';
      const item = MENU_CATEGORIES.flatMap(c => c.items ? c.items : [c]).find(i => i.id === routeId);
@@ -316,6 +323,8 @@ const DashboardLayout = () => {
                 <Dashboard
                   onNavigatePortfolio={() => navigateTo('portfolio')}
                   onNavigateReminders={() => navigateTo('reminders')}
+                  onNavigateAirdrop={openAirdrop}
+                  onNavigateResearch={openResearch}
                 />
               )}
 
@@ -332,8 +341,8 @@ const DashboardLayout = () => {
               {currentRoute === 'defi-tools' && <DeFiToolsLanding />}
 
               {/* EDUCACAO Pages */}
-              {currentRoute === 'research' && <ResearchHub />}
-              {currentRoute === 'research-detail' && <ResearchDetail />}
+              {currentRoute === 'research' && <ResearchHub onSelect={openResearch} />}
+              {currentRoute === 'research-detail' && selectedResearch && <ResearchDetail research={selectedResearch} onBack={() => navigateTo('research')} />}
               {currentRoute === 'strategies' && <StrategiesMarketplace />}
               {currentRoute === 'portfolios' && <ModelPortfoliosPage />}
               {currentRoute === 'recommendations' && <RecommendationsFeed />}
@@ -361,9 +370,9 @@ const DashboardLayout = () => {
               <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
                 <LogOut className="w-8 h-8 text-red-500 ml-1" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Terminar Sessão</h3>
+              <h3 className="text-xl font-bold text-white mb-2">Sair</h3>
               <p className="text-gray-400 text-sm mb-6">
-                Tem a certeza que deseja sair da sua conta? Terá de iniciar sessão novamente para aceder.
+                Tem certeza que deseja sair da sua conta? Terá de iniciar sessão novamente para acessar.
               </p>
               <div className="flex gap-3">
                 <button onClick={() => setIsLogoutModalOpen(false)} className="flex-1 bg-[#1A1D24] hover:bg-gray-800 text-white font-bold py-3 rounded-lg transition-colors border border-white/[0.07] outline-none">Cancelar</button>

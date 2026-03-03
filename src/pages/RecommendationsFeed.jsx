@@ -89,7 +89,7 @@ export default function RecommendationsFeed() {
         unsubscribeRef.current = null;
       }
     };
-  }, [user, userTier]);
+  }, [userTier]);
 
   const toggleRead = (recId) => {
     setReadRecommendations((prev) => {

@@ -93,7 +93,7 @@ export default function StrategiesMarketplace() {
         unsubscribeRef.current = null;
       }
     };
-  }, [user, userTier]);
+  }, [userTier]);
 
   // Filter strategies
   const filteredStrategies = strategies.filter((strategy) => {

@@ -339,7 +339,7 @@ export default function Wallets() {
               </div>
               <h3 className="text-xl font-bold text-white mb-2">Remover carteira</h3>
               <p className="text-gray-400 text-sm mb-4">
-                Tem a certeza que deseja remover esta carteira?
+                Tem certeza que deseja remover esta carteira?
               </p>
               <p className="font-mono text-xs text-gray-500 mb-6">
                 {shortAddress(walletToRemove.address)}

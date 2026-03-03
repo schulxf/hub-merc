@@ -166,7 +166,7 @@ function NewsCard({ type, title, excerpt, imageUrl, author, date, category, onCl
         <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/[0.04]">
           <div className="flex items-center gap-1.5 text-xs text-text-tertiary min-w-0">
             <User className="w-3 h-3 flex-shrink-0" />
-            <span className="truncate">{author || 'Equipa Mercurius'}</span>
+            <span className="truncate">{author || 'Equipe Mercurius'}</span>
           </div>
           {date && (
             <div className="flex items-center gap-1 text-[10px] text-text-muted flex-shrink-0 ml-2">
@@ -224,7 +224,7 @@ function PlaceholderCard({ type }) {
  *
  * Falls back to a placeholder card when a collection is empty.
  */
-const NewsGrid = React.memo(function NewsGrid() {
+const NewsGrid = React.memo(function NewsGrid({ onNavigateAirdrop, onNavigateResearch }) {
   const [items, setItems] = useState({ article: null, airdrop: null, defi: null });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -307,6 +307,7 @@ const NewsGrid = React.memo(function NewsGrid() {
                 author={items.article.author}
                 date={items.article.publishedAt}
                 category={items.article.category}
+                onClick={items.article ? () => onNavigateResearch && onNavigateResearch(items.article) : undefined}
               />
             ) : (
               <PlaceholderCard type="article" />
@@ -322,6 +323,7 @@ const NewsGrid = React.memo(function NewsGrid() {
                 author={items.airdrop.addedBy}
                 date={items.airdrop.createdAt}
                 category={items.airdrop.type || 'Airdrop'}
+                onClick={items.airdrop ? () => onNavigateAirdrop && onNavigateAirdrop(items.airdrop) : undefined}
               />
             ) : (
               <PlaceholderCard type="airdrop" />
