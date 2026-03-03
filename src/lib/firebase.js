@@ -3,7 +3,7 @@ import { getAuth } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// Puxamos as chaves seguras do ficheiro .env.local
+// Puxamos as chaves seguras do arquivo .env.local
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -31,5 +31,5 @@ try {
 }
 export { db };
 
-// Storage para upload de ficheiros
+// Storage para upload de arquivos
 export const storage = getStorage(app);

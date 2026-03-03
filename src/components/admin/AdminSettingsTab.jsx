@@ -50,8 +50,8 @@ export default function AdminSettingsTab({ onError }) {
           setAppName(data.appName || 'Mercurius Hub');
           setVersion(data.version || '1.0.0');
           setMaintenanceMode(data.maintenanceMode || false);
-          setFeatureFlags(data.featureFlags || featureFlags);
-          setCategories(data.categories || categories);
+          setFeatureFlags(prev => data.featureFlags || prev);
+          setCategories(prev => data.categories || prev);
         } else {
           // Initialize with defaults if document doesn't exist
           setConfig({
@@ -109,7 +109,7 @@ export default function AdminSettingsTab({ onError }) {
     try {
       // Validate inputs
       if (!appName.trim()) {
-        onError('Nome da aplicação não pode estar vazio');
+        onError?.('Nome da aplicação não pode estar vazio');
         setIsSaving(false);
         return;
       }
@@ -119,7 +119,7 @@ export default function AdminSettingsTab({ onError }) {
         !categories.strategies.length ||
         !categories.riskLevels.length
       ) {
-        onError('Todas as categorias devem ter pelo menos um item');
+        onError?.('Todas as categorias devem ter pelo menos um item');
         setIsSaving(false);
         return;
       }
@@ -138,7 +138,7 @@ export default function AdminSettingsTab({ onError }) {
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);
-      onError('Erro ao salvar configurações. Tente novamente.');
+      onError?.('Erro ao salvar configurações. Tente novamente.');
     } finally {
       setIsSaving(false);
     }

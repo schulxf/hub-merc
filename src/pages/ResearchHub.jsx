@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
 import { useUserProfile } from '../hooks/useUserProfile';
@@ -24,8 +23,7 @@ const RESEARCH_CATEGORIES = ['Análise Técnica', 'DeFi', 'NFT', 'Regulação', 
  * - Filters: status == 'published'
  * - Client-side filtering by: targetTier <= user.tier
  */
-export default function ResearchHub() {
-  const navigate = useNavigate();
+export default function ResearchHub({ onSelect }) {
   const { profile } = useUserProfile();
   const userTier = profile?.tier || 'free';
   const [research, setResearch] = useState([]);
@@ -177,7 +175,7 @@ export default function ResearchHub() {
             {filteredResearch.map((doc) => (
               <div
                 key={doc.firestoreId}
-                onClick={() => navigate(`/research/${doc.firestoreId}`)}
+                onClick={() => onSelect && onSelect(doc)}
                 className="bg-gray-900/50 border border-gray-700 rounded-xl overflow-hidden hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all cursor-pointer group"
               >
                 {/* Hero Image */}

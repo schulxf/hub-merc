@@ -19,7 +19,7 @@ export const MENU_CATEGORIES = [
     icon: Briefcase,
     items: [
       { id: 'portfolio', label: 'Portfólio Pessoal', icon: PieChart, permKey: 'portfolio' },
-      { id: 'carteiras-recomendadas', label: 'Carteiras Recomendadas', icon: Star, permKey: 'portfolio' },
+      { id: 'carteiras-recomendadas', label: 'Carteiras', icon: Star, permKey: 'portfolio' },
       { id: 'ia-copilot', label: 'Assistente IA', icon: Brain, permKey: 'portfolio' },
     ]
   },
@@ -175,9 +175,9 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
 
     <div className="mt-auto pt-6 border-t border-subtle/80 space-y-2">
       <button
-        onClick={() => navigateTo('carteiras-pro')}
+        onClick={() => navigateTo('carteiras-recomendadas')}
         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-fast outline-none focus:ring-2 focus:ring-cyan select-none ${
-          currentRoute === 'carteiras-pro'
+          currentRoute === 'carteiras-recomendadas'
             ? 'bg-bg-quaternary border border-cyan/30 shadow-cyan'
             : 'hover:bg-bg-quaternary/50 hover:border-border-medium'
         }`}
@@ -203,10 +203,10 @@ export const SidebarContent = ({ currentRoute, navigateTo, expandedMenus, toggle
       <button
         onClick={onLogout}
         className="w-full flex items-center gap-3 px-3 py-2 text-text-tertiary hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-fast outline-none focus:ring-2 focus:ring-cyan select-none"
-        title="Terminar Sessão"
+        title="Sair"
       >
         <LogOut className="w-4 h-4" />
-        <span className="text-xs font-semibold">Terminar Sessão</span>
+        <span className="text-xs font-semibold">Sair</span>
       </button>
     </div>
   </>

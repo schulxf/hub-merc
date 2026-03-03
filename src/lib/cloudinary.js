@@ -26,7 +26,7 @@ export async function uploadAirdropImage(file, airdropId) {
 
   const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   if (!validTypes.includes(file.type)) {
-    throw new Error('Tipo de ficheiro não suportado. Use JPEG, PNG, WebP ou GIF');
+    throw new Error('Tipo de arquivo não suportado. Use JPEG, PNG, WebP ou GIF');
   }
 
   try {

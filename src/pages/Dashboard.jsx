@@ -21,8 +21,10 @@ import PortfolioOverview from '../components/dashboard/PortfolioOverview';
  * @param {object}   props
  * @param {Function} props.onNavigatePortfolio  - Navigate to /portfolio route
  * @param {Function} props.onNavigateReminders  - Navigate to /reminders route
+ * @param {Function} [props.onNavigateAirdrop]  - Navigate to airdrop detail
+ * @param {Function} [props.onNavigateResearch] - Navigate to research detail
  */
-function DashboardContent({ onNavigatePortfolio, onNavigateReminders }) {
+function DashboardContent({ onNavigatePortfolio, onNavigateReminders, onNavigateAirdrop, onNavigateResearch }) {
   const { totalValue, change24hPct, change24hAbs, isLoading } = useDashboardData();
 
   // Navigate to portfolio with the add-transaction modal open
@@ -99,7 +101,7 @@ function DashboardContent({ onNavigatePortfolio, onNavigateReminders }) {
       </div>
 
       {/* ── 4. NEWS GRID ───────────────────────────────────────────────── */}
-      <NewsGrid />
+      <NewsGrid onNavigateAirdrop={onNavigateAirdrop} onNavigateResearch={onNavigateResearch} />
     </div>
   );
 }
@@ -117,13 +119,17 @@ function DashboardContent({ onNavigatePortfolio, onNavigateReminders }) {
  * @param {object}   props
  * @param {Function} [props.onNavigatePortfolio]  - Callback to navigate to Portfolio
  * @param {Function} [props.onNavigateReminders]  - Callback to navigate to Reminders
+ * @param {Function} [props.onNavigateAirdrop]    - Callback to navigate to airdrop detail
+ * @param {Function} [props.onNavigateResearch]   - Callback to navigate to research detail
  */
-export default function Dashboard({ onNavigatePortfolio, onNavigateReminders }) {
+export default function Dashboard({ onNavigatePortfolio, onNavigateReminders, onNavigateAirdrop, onNavigateResearch }) {
   return (
     <PortfolioProvider>
       <DashboardContent
         onNavigatePortfolio={onNavigatePortfolio}
         onNavigateReminders={onNavigateReminders}
+        onNavigateAirdrop={onNavigateAirdrop}
+        onNavigateResearch={onNavigateResearch}
       />
     </PortfolioProvider>
   );

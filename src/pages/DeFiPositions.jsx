@@ -3,7 +3,7 @@ import { Wallet, Plus, Activity, Trash2, X, Loader2, Droplets, Layers, Clock, Ar
 
 // ============================================================================
 // INSTRUÇÕES PARA O VS CODE LOCAL:
-// 1. DESCOMENTE as importações abaixo para ligar aos seus ficheiros reais:
+// 1. DESCOMENTE as importações abaixo para ligar aos seus arquivos reais:
 import { db, auth } from '../lib/firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query } from 'firebase/firestore';
 import { fmt } from '../lib/utils';
@@ -82,7 +82,7 @@ export default function DeFiPositions() {
   // 3. REMOVER POSIÇÃO DO FIREBASE
   const removePos = async (id) => {
     if (!auth.currentUser) return;
-    if (!window.confirm("Tem a certeza que deseja remover esta posição?")) return;
+    if (!window.confirm("Tem certeza que deseja remover esta posição?")) return;
 
     try {
       const posRef = doc(db, 'users', auth.currentUser.uid, 'defi', id);

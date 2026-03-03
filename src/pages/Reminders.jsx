@@ -60,7 +60,7 @@ const RemindersPage = () => {
 
     try {
       const userRef = doc(db, 'users', auth.currentUser.uid);
-      await updateDoc(userRef, { trackers: updated });
+      await setDoc(userRef, { trackers: updated }, { merge: true });
     } catch (error) {
       console.error('Error saving reminders:', error);
       // Fallback to localStorage if Firestore fails
